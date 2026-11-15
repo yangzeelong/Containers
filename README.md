@@ -110,10 +110,12 @@ override.
 | `include/containers/SharedStr.hpp` | Ref-counted immutable string (`Arc<str>`) |
 | `include/containers/IndexMap.hpp` | Insertion-ordered hash map (`IndexMap<K, V>`) |
 | `include/containers/SlotMap.hpp` | Generation-tagged stable slots (`SlotMap<T>`) |
+| `include/containers/bench/PerfEval.hpp` | Threshold-based performance evaluation harness |
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
 | `benchmarks/registry/` | Google Benchmark suites for copy, COW detach, clone, queue transfer, Result |
+| `benchmarks/perf/` | `containers_perf_eval`: targets, verdicts and a Markdown report |
 | `examples/consumer/` | Standalone downstream project: `find_package(Containers CONFIG)` + install prefix |
 | `configs/` | Removed when the compose engine left |
 | `tools/` | Removed with the compose engine |
@@ -123,8 +125,9 @@ override.
 ## Testing & Benchmarking
 
 ```bash
-ctest --test-dir build --output-on-failure                            # 2 tests: containers_tests + containers_benchmarks
-./build/benchmarks/containers_benchmarks --benchmark_min_time=0.05s   # standalone run
+ctest --test-dir build --output-on-failure                            # 3 tests: tests + benchmarks + perf smoke
+./build/benchmarks/containers_benchmarks --benchmark_min_time=0.05s   # standalone benchmark run
+./build/benchmarks/containers_perf_eval --rounds 15 --iterations 2000  # targets + report
 ```
 
 Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
@@ -132,9 +135,9 @@ Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
 `OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
 `NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`,
-`IndexMapTest`, `SlotMapTest`, `MessageBytesTest`. Test sources are found by
-suffix:
-any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
+`IndexMapTest`, `SlotMapTest`, `MessageBytesTest`, `PerfEvalTest`. Test sources
+are found by suffix: any `*Test.cpp` is compiled into `containers_tests`,
+mirroring Nexusflow's convention.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
 treat as a baseline, not a contract):
@@ -149,6 +152,32 @@ treat as a baseline, not a contract):
 
 The takeaway is the same at every payload size: `BM_MessageCopy` stays at ~0.011 us
 while explicit deep copies (`Clone`, first `Mut`) grow with the payload.
+
+### Performance evaluation (`containers_perf_eval`)
+
+Google Benchmark answers "how fast is this case". The evaluation runner answers
+"does this build still meet its targets" and exits non-zero when a case misses:
+
+```bash
+./build/benchmarks/containers_perf_eval --rounds 15 --iterations 2000 --warmup 2 \
+    --output perf_report.md
+```
+
+- Every case is measured over `--rounds` timed rounds of `--iterations` calls;
+  the Markdown report lists mean/median/p95/min/max/stddev/CV.
+- A target is either a **reference case in the same run** (for example
+  `0.737x vector_reserved_push`) or an **absolute ns/op limit**. Same-run
+  references are machine independent, so they are the checks CI can enforce;
+  absolute limits are budget checks for a known machine.
+- `--tolerance PCT` is the default allowed regression and each case can override
+  it. Exit code is `1` when a case misses its target; `--no-check` downgrades the
+  run to report-only. `--list` prints the registered cases.
+- `ctest` runs a short `--no-check` pass so the runner itself cannot rot.
+
+Adding a case is one call in `benchmarks/perf/PerfEvaluatorMain.cpp`:
+`evaluator.AddCase("name", body, {baselineNs, "reference", tolerancePercent})`.
+Bodies must have observable side effects, otherwise the optimizer is free to
+delete them (the framework never talks to the optimizer on your behalf).
 
 Offline builds can reuse a local google benchmark source tree with
 `-DFETCHCONTENT_SOURCE_DIR_GOOGLEBENCHMARK=<googlebenchmark-src>` and a local

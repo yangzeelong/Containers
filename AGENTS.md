@@ -28,6 +28,7 @@
 | `include/containers/ConcurrentQueue.hpp` `SpscQueue.hpp` | 阻塞队列 / 无锁 SPSC 环形队列 |
 | `src/*Test.cpp` | colocated 单测（自动编译进 `containers_tests`） |
 | `benchmarks/registry/` | Google Benchmark：拷贝、COW 分离、Clone、队列传送 |
+| `benchmarks/perf/` | `containers_perf_eval`：目标阈值判定 + Markdown 报告 |
 | `examples/consumer/` | 独立下游工程：`find_package(Containers CONFIG)`，只对着 `cmake --install` 的前缀构建，不进入本树 |
 | `cmake/` | `include.cmake`、`Utils.cmake`、`Summary.cmake`、`3rdparty/*.cmake`、`ContainersConfig.cmake.in` |
 | `.github/workflows/ci.yml` | Linux（gcc/clang）与 Windows（MSVC）构建 + 单测 + 安装消费 + 基准冒烟 |
@@ -50,10 +51,12 @@
 | SharedStr | `include/containers/SharedStr.hpp` |
 | IndexMap | `include/containers/IndexMap.hpp` |
 | SlotMap | `include/containers/SlotMap.hpp` |
+| 性能评估框架 | `include/containers/bench/PerfEval.hpp` + `benchmarks/perf/PerfEvaluatorMain.cpp` |
 | 并发队列 / 无锁 SPSC 环形队列 | `include/containers/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
 | 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
 | 单测 | `src/*Test.cpp`（任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
 | 基准 | `benchmarks/**/Benchmark*.cpp` |
+| 性能评估用例 / 阈值 | `benchmarks/perf/PerfEvaluatorMain.cpp`（`AddCase` 一处注册） |
 
 特别注意：`SpscQueue` 的环形缓冲里 head/tail 按 cache line 隔开（wake-up handshake
 是 Dekker 型 StoreLoad），改热点索引时必须同步改 padding，否则会退化成
@@ -135,6 +138,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
 ctest --test-dir build --output-on-failure
 ./build/tests/containers_tests                 # 直接跑
 ./build/benchmarks/containers_benchmarks --benchmark_min_time=0.05s   # 联网/离线源码时
+./build/benchmarks/containers_perf_eval --rounds 15 --iterations 2000 # 目标判定 + 报告
 ```
 
 - 当前 suite：`MessageTest`、`MessageMetaTest`、`AnyTest`、`OptionalThrowingTest`、
@@ -142,10 +146,16 @@ ctest --test-dir build --output-on-failure
   双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`、
   `OnceCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
   `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`SharedStrTest`、
-  `IndexMapTest`、`SlotMapTest`、`MessageBytesTest`。
+  `IndexMapTest`、`SlotMapTest`、`MessageBytesTest`、`PerfEvalTest`。
 - 改头（解析、COW、队列、唤醒）**必须**跑测试；不要为了变绿去改测试语义，
   要么修实现，要么先说明测试断言本身错了。
-- 本地实测（Clang 19.1.5 Release）：`ctest` 2/2 通过——`containers_tests` 1.9s
+- 性能评估框架（`containers_perf_eval`）：`include/containers/bench/PerfEval.hpp`
+  提供 rounds/iterations 采样与 mean/median/p95/min/max/stddev/CV 统计；用例在
+  `benchmarks/perf/PerfEvaluatorMain.cpp` 注册，目标可以是同一次 run 内的参照用例
+  （机器无关，例 `0.737x vector_reserved_push`）或绝对 ns/op 上限；
+  `--tolerance` 给默认容差，超标退出码 1，`--no-check` 只出报告。`ctest` 跑一条
+  `--no-check` 短冒烟，保证框架本身不腐化。
+- 本地实测（Clang 19.1.5 Release）：`ctest` 3/3 通过——`containers_tests` 1.9s
   （7 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 19s。基准数字
   基线（16/2048 元素）：`BM_MessageCopy` 0.011/0.011 us、`BM_MessageConstruction`
   0.093/0.135 us、`BM_MessageCOWDetach` 0.074/0.105 us、`BM_MessageClone`
