@@ -37,6 +37,20 @@ in unit tests, in CI, or offline on any machine.
 *   **Rust-style Cow** — `containers::Cow<T>` is either borrowed or owned; reads
     are free and the first `toMut()` deep-copies, the same contract as
     `std::borrow::Cow`.
+*   **Lazy initialization** — `OnceCell<T>` initializes at most once through a
+    factory (thread-safe `std::call_once`), `Lazy<T>` wraps it behind `*`/`->`.
+*   **Ref-counted byte buffers** — `Bytes` clones and slices share storage,
+    `BytesMut` grows mutably and `freeze()` hands the buffer over without copying.
+*   **Typed bit flags** — `BitFlags<Enum>` wraps an enum's bit pattern with
+    `contains` / `insert` / `remove` and `|`, `&`, `^`, `~` operators.
+*   **Non-zero integers** — `NonZero<T>` encodes the "never zero" invariant;
+    `TryNew` returns an empty `Optional` instead of asserting.
+*   **Small vectors** — `SmallVec<T, N>` stores up to `N` elements inline and
+    promotes to a heap vector on the first overflow, like Rust's `smallvec`.
+*   **Atomic shared_ptr** — `AtomicSharedPtr<T>` is a C++14 stand-in for C++20's
+    `std::atomic<std::shared_ptr<T>>` (mutex-based load/store/exchange/CAS).
+*   **Shared strings** — `SharedStr` is `Arc<str>`: immutable, cheap to clone and
+    slice, with content comparison and `SharedStrHash` for unordered containers.
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
@@ -80,6 +94,13 @@ override.
 | `include/containers/Config.hpp` | `CS_NODISCARD` feature shim |
 | `include/containers/ScopedGuard.hpp` | Scope-exit callable (`OnScopeExit`) |
 | `include/containers/Cow.hpp` | Borrowed/owned `Cow<T>` with copy-on-write `toMut()` |
+| `include/containers/OnceCell.hpp` | `OnceCell<T>` / `Lazy<T>` lazy initialization |
+| `include/containers/Bytes.hpp` | Ref-counted `Bytes` / mutable `BytesMut` |
+| `include/containers/BitFlags.hpp` | Typed bit flags over an enum |
+| `include/containers/NonZero.hpp` | Non-zero integer wrappers (`NonZeroU32`, ...) |
+| `include/containers/SmallVec.hpp` | Inline-capacity vector (`SmallVec<T, N>`) |
+| `include/containers/AtomicSharedPtr.hpp` | `AtomicSharedPtr<T>` (C++14 backport) |
+| `include/containers/SharedStr.hpp` | Ref-counted immutable string (`Arc<str>`) |
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
@@ -99,7 +120,9 @@ ctest --test-dir build --output-on-failure                            # 2 tests:
 
 Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
-`SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`.
+`SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
+`OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
+`NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`.
 Test sources are found by suffix:
 any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
 
