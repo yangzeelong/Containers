@@ -55,6 +55,9 @@ in unit tests, in CI, or offline on any machine.
     insertion order, with O(1) `swapErase` and order-preserving `erase`.
 *   **Stable slots** — `SlotMap<T>` hands out generation-tagged `SlotKey`s, so a
     stale key can never alias a reused slot (`clear` invalidates every key).
+*   **Zero-copy Bytes payloads** — a `Message` can carry `containers::Bytes`;
+    copying the message is one ref-count bump and `Borrow<Bytes>()` never copies
+    the buffer (the `MessageBytesTest` suite pins this down).
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
@@ -129,7 +132,8 @@ Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
 `OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
 `NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`,
-`IndexMapTest`, `SlotMapTest`. Test sources are found by suffix:
+`IndexMapTest`, `SlotMapTest`, `MessageBytesTest`. Test sources are found by
+suffix:
 any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
