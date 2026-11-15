@@ -38,6 +38,9 @@
 | --- | --- |
 | Message 模型 / COW 行为 | `include/containers/Message.hpp` |
 | Any / Optional / ViewPtr | `include/containers/Any.hpp` 等三个头 |
+| Result / Unit / Config（Rust 风格） | `include/containers/Result.hpp`、`Unit.hpp`、`Config.hpp` |
+| ScopedGuard / OnScopeExit | `include/containers/ScopedGuard.hpp` |
+| Cow（Borrowed/Owned） | `include/containers/Cow.hpp` |
 | 并发队列 / 无锁 SPSC 环形队列 | `include/containers/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
 | 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
 | 单测 | `src/*Test.cpp`（任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
@@ -127,7 +130,7 @@ ctest --test-dir build --output-on-failure
 
 - 当前 suite：`MessageTest`、`MessageMetaTest`、`AnyTest`、`OptionalThrowingTest`、
   `ConcurrentQueueTest`、`SpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
-  双线程压力用例）。
+  双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`。
 - 改头（解析、COW、队列、唤醒）**必须**跑测试；不要为了变绿去改测试语义，
   要么修实现，要么先说明测试断言本身错了。
 - 本地实测（Clang 19.1.5 Release）：`ctest` 2/2 通过——`containers_tests` 1.9s

@@ -25,10 +25,18 @@ in unit tests, in CI, or offline on any machine.
     independent. It also carries per-stage timing metadata that is itself copy-on-write.
 *   **Type-erased variant** — `containers::Any` is a simplified, C++14-compatible
     `std::any`: typed lookup, deep copy on copy.
+*   **Rust-style result** — `containers::Result<T, E>` with a `Result<void, E>`
+    specialization, `map` / `mapErr` / `andThen` / `unwrapOr`, plus a `Unit` type
+    for empty payloads. C++14, no exceptions required.
 *   **Rust-style optional** — `Optional<T>` uses manual placement construction with
     exception-safe `reset()`/assignment (global namespace, as in the upstream test bed).
 *   **Non-owning pointer view** — `ViewPtr<T>` is a zero-cost wrapper explicitly
     modelling "I don't own it", with `std::hash` support for unordered containers.
+*   **Scope guard** — `ScopedGuard` / `OnScopeExit` runs a callable on scope exit
+    unless dismissed, for rollback and cleanup paths that must not be forgotten.
+*   **Rust-style Cow** — `containers::Cow<T>` is either borrowed or owned; reads
+    are free and the first `toMut()` deep-copies, the same contract as
+    `std::borrow::Cow`.
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
@@ -67,10 +75,15 @@ override.
 | `include/containers/Any.hpp` | Type-erased variant |
 | `include/containers/Optional.hpp` | Rust-style optional |
 | `include/containers/ViewPtr.hpp` | Non-owning pointer view + std::hash |
+| `include/containers/Result.hpp` | Rust-style `Result<T, E>` + combinators |
+| `include/containers/Unit.hpp` | `()`-style empty value type |
+| `include/containers/Config.hpp` | `CS_NODISCARD` feature shim |
+| `include/containers/ScopedGuard.hpp` | Scope-exit callable (`OnScopeExit`) |
+| `include/containers/Cow.hpp` | Borrowed/owned `Cow<T>` with copy-on-write `toMut()` |
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
-| `benchmarks/registry/` | Google Benchmark suites for copy, COW detach, clone, queue transfer |
+| `benchmarks/registry/` | Google Benchmark suites for copy, COW detach, clone, queue transfer, Result |
 | `examples/consumer/` | Standalone downstream project: `find_package(Containers CONFIG)` + install prefix |
 | `configs/` | Removed when the compose engine left |
 | `tools/` | Removed with the compose engine |
@@ -86,8 +99,9 @@ ctest --test-dir build --output-on-failure                            # 2 tests:
 
 Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
-`SpscMessageStress`. Test sources are found by suffix: any `*Test.cpp` is compiled
-into `containers_tests`, mirroring Nexusflow's convention.
+`SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`.
+Test sources are found by suffix:
+any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
 treat as a baseline, not a contract):
