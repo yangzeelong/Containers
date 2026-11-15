@@ -32,6 +32,8 @@ in unit tests, in CI, or offline on any machine.
     exception-safe `reset()`/assignment (global namespace, as in the upstream test bed).
 *   **Non-owning pointer view** — `ViewPtr<T>` is a zero-cost wrapper explicitly
     modelling "I don't own it", with `std::hash` support for unordered containers.
+*   **Scope guard** — `ScopedGuard` / `OnScopeExit` runs a callable on scope exit
+    unless dismissed, for rollback and cleanup paths that must not be forgotten.
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
@@ -73,6 +75,7 @@ override.
 | `include/containers/Result.hpp` | Rust-style `Result<T, E>` + combinators |
 | `include/containers/Unit.hpp` | `()`-style empty value type |
 | `include/containers/Config.hpp` | `CS_NODISCARD` feature shim |
+| `include/containers/ScopedGuard.hpp` | Scope-exit callable (`OnScopeExit`) |
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
@@ -92,7 +95,7 @@ ctest --test-dir build --output-on-failure                            # 2 tests:
 
 Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
-`SpscMessageStress`, `ResultTest`, `UnitTest`. Test sources are found by suffix:
+`SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`. Test sources are found by suffix:
 any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
