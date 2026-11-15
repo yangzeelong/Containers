@@ -49,15 +49,23 @@ TEST(AtomicSharedPtrTest, CompareExchangeUpdatesExpectedOnMismatch) {
     EXPECT_EQ(5, *atom.load());
 }
 
+namespace {
+
+// Usable inside the worker lambdas without capturing it: MSVC rejects an
+// uncaptured non-static const int (C3493), and clang warns when a const int is
+// captured while unused as a capture.
+constexpr int kIncrementsPerThread = 500;
+
+} // namespace
+
 TEST(AtomicSharedPtrTest, ConcurrentIncrementLoopConverges) {
     containers::AtomicSharedPtr<int> atom(std::make_shared<int>(0));
 
     const int threadCount = 4;
-    const int incrementsPerThread = 500;
     std::vector<std::thread> threads;
     for (int index = 0; index < threadCount; ++index) {
         threads.emplace_back([&atom] {
-            for (int step = 0; step < incrementsPerThread; ++step) {
+            for (int step = 0; step < kIncrementsPerThread; ++step) {
                 auto current = atom.load();
                 auto next = std::make_shared<int>(*current + 1);
                 while (!atom.compareExchange(current, next)) {
@@ -70,5 +78,5 @@ TEST(AtomicSharedPtrTest, ConcurrentIncrementLoopConverges) {
         thread.join();
     }
 
-    EXPECT_EQ(threadCount * incrementsPerThread, *atom.load());
+    EXPECT_EQ(threadCount * kIncrementsPerThread, *atom.load());
 }
