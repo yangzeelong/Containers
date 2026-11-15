@@ -154,9 +154,12 @@ Builds `build/src/containers.lib`, `build/tests/containers_tests.exe`,
 
 ### Dependencies and offline builds
 
-Third-party code is fetched with `FetchContent` (`cmake/3rdparty/`): yaml-cpp 0.7.0,
-googletest pinned to commit `03597a01…`, google benchmark v1.8.0. To build without
-network access, point each dependency at a local checkout:
+Third-party code is fetched with `FetchContent` (`cmake/3rdparty/`): yaml-cpp 0.9.0,
+googletest pinned to commit `03597a01…`, google benchmark v1.8.0. yaml-cpp 0.9.0 is a
+floor, not a preference: 0.7.0/0.8.0 use `uint16_t`/`uint32_t` in
+`src/emitterutils.cpp` without including `<cstdint>`, which GCC 14+ and Clang 18+ reject,
+and they declare `cmake_minimum_required(VERSION 3.4)`, which CMake 4 refuses. To build
+without network access, point each dependency at a local checkout:
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \

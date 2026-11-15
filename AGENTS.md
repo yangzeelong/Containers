@@ -86,9 +86,13 @@ Windows + Clang 的 GNU 驱动有两个已修好的坑，别回退：
 
 ### 离线构建
 
-依赖走 `FetchContent`：yaml-cpp 0.7.0（`yaml`）、googletest 固定 commit
+依赖走 `FetchContent`：yaml-cpp 0.9.0（`yaml`）、googletest 固定 commit
 `03597a01ee50ed33e9dfd640b249b4be3799d395`、google benchmark v1.8.0
-（`GoogleBenchmark`）。离线时显式指向本地源码：
+（`GoogleBenchmark`）。**yaml-cpp 不要降回 0.7.0 / 0.8.0**：这两个版本在
+`src/emitterutils.cpp` 里用了 `uint16_t` / `uint32_t` 却没 include `<cstdint>`，
+GCC 14+ / Clang 18+（不传递包含它的 libstdc++）直接编译失败；而且它们声明
+`cmake_minimum_required(VERSION 3.4)`，CMake 4 会拒绝配置。0.9.0 两个问题都没有。
+离线时显式指向本地源码：
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \

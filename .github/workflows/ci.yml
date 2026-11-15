@@ -53,14 +53,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pin down nothing about which Visual Studio ships with the runner image:
+      # vswhere resolves the installed MSVC, and Ninja keeps the generator
+      # independent of the VS version (a hard-coded "Visual Studio 17 2022"
+      # generator fails on images that only carry a newer VS).
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Configure
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --config Release --parallel 4
+        run: cmake --build build --parallel 4
 
       - name: Test
-        run: ctest --test-dir build -C Release --output-on-failure --no-tests=error
+        run: ctest --test-dir build --output-on-failure --no-tests=error
 
       - name: CLI smoke test
-        run: ./build/tools/Release/containers_cli.exe configs/stack.yaml
+        run: ./build/tools/containers_cli.exe configs/stack.yaml
