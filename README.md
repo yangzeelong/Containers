@@ -45,6 +45,8 @@ in unit tests, in CI, or offline on any machine.
     `contains` / `insert` / `remove` and `|`, `&`, `^`, `~` operators.
 *   **Non-zero integers** — `NonZero<T>` encodes the "never zero" invariant;
     `TryNew` returns an empty `Optional` instead of asserting.
+*   **Small vectors** — `SmallVec<T, N>` stores up to `N` elements inline and
+    promotes to a heap vector on the first overflow, like Rust's `smallvec`.
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
@@ -92,6 +94,7 @@ override.
 | `include/containers/Bytes.hpp` | Ref-counted `Bytes` / mutable `BytesMut` |
 | `include/containers/BitFlags.hpp` | Typed bit flags over an enum |
 | `include/containers/NonZero.hpp` | Non-zero integer wrappers (`NonZeroU32`, ...) |
+| `include/containers/SmallVec.hpp` | Inline-capacity vector (`SmallVec<T, N>`) |
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
@@ -113,7 +116,7 @@ Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
 `SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
 `OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
-`NonZeroTest`. Test sources are found by suffix:
+`NonZeroTest`, `SmallVecTest`. Test sources are found by suffix:
 any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
