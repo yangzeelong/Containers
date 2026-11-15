@@ -39,6 +39,8 @@ in unit tests, in CI, or offline on any machine.
     `std::borrow::Cow`.
 *   **Lazy initialization** — `OnceCell<T>` initializes at most once through a
     factory (thread-safe `std::call_once`), `Lazy<T>` wraps it behind `*`/`->`.
+*   **Ref-counted byte buffers** — `Bytes` clones and slices share storage,
+    `BytesMut` grows mutably and `freeze()` hands the buffer over without copying.
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
@@ -83,6 +85,7 @@ override.
 | `include/containers/ScopedGuard.hpp` | Scope-exit callable (`OnScopeExit`) |
 | `include/containers/Cow.hpp` | Borrowed/owned `Cow<T>` with copy-on-write `toMut()` |
 | `include/containers/OnceCell.hpp` | `OnceCell<T>` / `Lazy<T>` lazy initialization |
+| `include/containers/Bytes.hpp` | Ref-counted `Bytes` / mutable `BytesMut` |
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
@@ -103,7 +106,7 @@ ctest --test-dir build --output-on-failure                            # 2 tests:
 Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
 `SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
-`OnceCellTest`, `LazyTest`. Test sources are found by suffix:
+`OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`. Test sources are found by suffix:
 any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
