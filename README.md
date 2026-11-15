@@ -49,6 +49,8 @@ in unit tests, in CI, or offline on any machine.
     promotes to a heap vector on the first overflow, like Rust's `smallvec`.
 *   **Atomic shared_ptr** — `AtomicSharedPtr<T>` is a C++14 stand-in for C++20's
     `std::atomic<std::shared_ptr<T>>` (mutex-based load/store/exchange/CAS).
+*   **Shared strings** — `SharedStr` is `Arc<str>`: immutable, cheap to clone and
+    slice, with content comparison and `SharedStrHash` for unordered containers.
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
@@ -98,6 +100,7 @@ override.
 | `include/containers/NonZero.hpp` | Non-zero integer wrappers (`NonZeroU32`, ...) |
 | `include/containers/SmallVec.hpp` | Inline-capacity vector (`SmallVec<T, N>`) |
 | `include/containers/AtomicSharedPtr.hpp` | `AtomicSharedPtr<T>` (C++14 backport) |
+| `include/containers/SharedStr.hpp` | Ref-counted immutable string (`Arc<str>`) |
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
@@ -119,7 +122,8 @@ Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
 `SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
 `OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
-`NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`. Test sources are found by suffix:
+`NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`.
+Test sources are found by suffix:
 any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
