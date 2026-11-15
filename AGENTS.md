@@ -48,6 +48,8 @@
 | SmallVec | `include/containers/SmallVec.hpp` |
 | AtomicSharedPtr | `include/containers/AtomicSharedPtr.hpp` |
 | SharedStr | `include/containers/SharedStr.hpp` |
+| IndexMap | `include/containers/IndexMap.hpp` |
+| SlotMap | `include/containers/SlotMap.hpp` |
 | 并发队列 / 无锁 SPSC 环形队列 | `include/containers/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
 | 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
 | 单测 | `src/*Test.cpp`（任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
@@ -139,7 +141,8 @@ ctest --test-dir build --output-on-failure
   `ConcurrentQueueTest`、`SpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
   双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`、
   `OnceCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
-  `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`SharedStrTest`。
+  `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`SharedStrTest`、
+  `IndexMapTest`、`SlotMapTest`、`MessageBytesTest`。
 - 改头（解析、COW、队列、唤醒）**必须**跑测试；不要为了变绿去改测试语义，
   要么修实现，要么先说明测试断言本身错了。
 - 本地实测（Clang 19.1.5 Release）：`ctest` 2/2 通过——`containers_tests` 1.9s

@@ -51,6 +51,13 @@ in unit tests, in CI, or offline on any machine.
     `std::atomic<std::shared_ptr<T>>` (mutex-based load/store/exchange/CAS).
 *   **Shared strings** — `SharedStr` is `Arc<str>`: immutable, cheap to clone and
     slice, with content comparison and `SharedStrHash` for unordered containers.
+*   **Insertion-ordered map** — `IndexMap<K, V>` is a hash map that iterates in
+    insertion order, with O(1) `swapErase` and order-preserving `erase`.
+*   **Stable slots** — `SlotMap<T>` hands out generation-tagged `SlotKey`s, so a
+    stale key can never alias a reused slot (`clear` invalidates every key).
+*   **Zero-copy Bytes payloads** — a `Message` can carry `containers::Bytes`;
+    copying the message is one ref-count bump and `Borrow<Bytes>()` never copies
+    the buffer (the `MessageBytesTest` suite pins this down).
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
@@ -101,6 +108,8 @@ override.
 | `include/containers/SmallVec.hpp` | Inline-capacity vector (`SmallVec<T, N>`) |
 | `include/containers/AtomicSharedPtr.hpp` | `AtomicSharedPtr<T>` (C++14 backport) |
 | `include/containers/SharedStr.hpp` | Ref-counted immutable string (`Arc<str>`) |
+| `include/containers/IndexMap.hpp` | Insertion-ordered hash map (`IndexMap<K, V>`) |
+| `include/containers/SlotMap.hpp` | Generation-tagged stable slots (`SlotMap<T>`) |
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
@@ -122,8 +131,9 @@ Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
 `SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
 `OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
-`NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`.
-Test sources are found by suffix:
+`NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`,
+`IndexMapTest`, `SlotMapTest`, `MessageBytesTest`. Test sources are found by
+suffix:
 any `*Test.cpp` is compiled into `containers_tests`, mirroring Nexusflow's convention.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
