@@ -11,38 +11,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+  linux:
+    name: linux-${{ matrix.compiler }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: linux-gcc
-            os: ubuntu-latest
-            cc: gcc
-            cxx: g++
-          - name: linux-clang
-            os: ubuntu-latest
-            cc: clang
-            cxx: clang++
-          - name: windows-msvc
-            os: windows-latest
-            cc: ""
-            cxx: ""
+        compiler: [gcc, clang]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install ninja (Linux)
-        if: runner.os == 'Linux'
+      - name: Install ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
       - name: Configure
-        shell: bash
         env:
-          CC: ${{ matrix.cc }}
-          CXX: ${{ matrix.cxx }}
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.compiler == 'gcc' && 'g++' || 'clang++' }}
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
@@ -52,9 +38,29 @@ jobs:
         run: ctest --test-dir build --output-on-failure --no-tests=error
 
       - name: CLI smoke test
-        shell: bash
         run: ./build/tools/containers_cli configs/stack.yaml
 
       - name: Benchmark smoke test
-        if: runner.os == 'Linux'
-        run: ./build/benchmarks/containers_benchmarks --benchmark_min_time=0.01s --benchmark_filter=BM_ParseAndValidate/8
+        run: >-
+          ./build/benchmarks/containers_benchmarks
+          --benchmark_min_time=0.01s
+          --benchmark_filter=BM_ParseAndValidate/8
+
+  windows:
+    name: windows-msvc
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure --no-tests=error
+
+      - name: CLI smoke test
+        run: ./build/tools/Release/containers_cli.exe configs/stack.yaml
