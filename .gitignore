@@ -18,6 +18,10 @@ tmp/
 data/
 *.log
 
+# Local "install + consume" verification leftovers (matches the CI steps).
+stage/
+consumer-build/
+
 # Editor and tool caches.
 .vs/
 .vscode/

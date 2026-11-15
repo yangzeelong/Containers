@@ -6,42 +6,46 @@
 
 ## 1. 这是什么项目
 
-**Containers**：C++14 的容器编排清单（compose 风格 YAML）解析/校验/排序库——
-`include/containers/` + `src/`。核心能力：加载 `services`/`networks`/`volumes`，
-一次性收集结构性问题（`Error`/`Warning` + YAML 路径），解析 `extends` 继承，
-按 `depends_on` 做确定性拓扑排序得到启动顺序。
+**Containers（朋友们简称 cs）**：C++14 的**公共消息与队列容器库**——从 NexusFlow
+测试床里整理出来的通用容器组件，纯 header-only 对外分发。核心能力：
 
-**它不接触任何容器运行时**：没有 Docker socket、没有守护进程、不联网。清单就是
-数据，所以整条链路可以在单测、CI、甚至没装 Docker 的机器上跑。
+- 类型擦除的 **Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝语义）。
+- 类型擦除变体 `Any`、Rust 风格手工取位的 `Optional`、非拥有指针包装 `ViewPtr`。
+- 阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者环形队列 `SpscQueue`。
 
-约定与 `C:\Code\Nexusflow` 保持一致：`*Test.cpp` 后缀自动归入测试目标、
-`Benchmark*.cpp` 归入基准目标、第三方依赖走 `cmake/3rdparty/*.cmake` 的
-FetchContent。
+**它不接触任何容器运行时或框架执行器**：没有 pipeline、没有消息执行、没有调度——
+消息只是数据，所以整条链路（拷贝、分离、进出队、阻塞、唤醒）可以在单测、CI、
+甚至没装任何框架的机器上跑。
+
+约定与 `C:\Code\Nexusflow` 保持一致：`*Test.cpp` 后缀自动归入测试目标。
+第三方依赖只剩 googletest（单测）与 google benchmark（基准），都通过
+`cmake/3rdparty/*.cmake` 的 FetchContent 引入。
 
 | 路径 | 作用 |
 | --- | --- |
-| `include/containers/engine.hpp` | 公开 API：`Manifest`、`Service`、`Network`、`Volume`、`Issue`、加载器、`parse_port`、`split_command` |
-| `src/engine.cpp` | YAML 加载、校验、`extends` 解析、Kahn 排序 |
-| `src/engineTest.cpp` | gtest 用例（18 个 / 7 个 suite） |
-| `benchmarks/registry/` | Google Benchmark：解析校验、排序、命令切分 |
-| `tools/containers_cli.cpp` | 命令行校验器/计划器 |
-| `examples/basic-goal/` | 最小库使用者示例 |
-| `configs/stack.yaml` | 仓库自带清单，测试、CLI、CI、示例共用 |
-| `cmake/` | `include.cmake`、`Utils.cmake`、`Summary.cmake`、`3rdparty/*.cmake` |
-| `.github/workflows/ci.yml` | Linux（gcc/clang）与 Windows（MSVC）构建 + ctest |
+| `include/containers/Message.hpp` | COW 消息容器 + 消息元数据 |
+| `include/containers/Any.hpp` `Optional.hpp` `ViewPtr.hpp` | 变体 / 可选 / 指针视图 |
+| `include/containers/ConcurrentQueue.hpp` `SpscQueue.hpp` | 阻塞队列 / 无锁 SPSC 环形队列 |
+| `src/*Test.cpp` | colocated 单测（自动编译进 `containers_tests`） |
+| `benchmarks/registry/` | Google Benchmark：拷贝、COW 分离、Clone、队列传送 |
+| `examples/consumer/` | 独立下游工程：`find_package(Containers CONFIG)`，只对着 `cmake --install` 的前缀构建，不进入本树 |
+| `cmake/` | `include.cmake`、`Utils.cmake`、`Summary.cmake`、`3rdparty/*.cmake`、`ContainersConfig.cmake.in` |
+| `.github/workflows/ci.yml` | Linux（gcc/clang）与 Windows（MSVC）构建 + 单测 + 安装消费 + 基准冒烟 |
 
 ### 代码地图（改哪里找哪里）
 
 | 想改的东西 | 文件 |
 | --- | --- |
-| 清单字段 / 模型结构 | `include/containers/engine.hpp` |
-| YAML 字段读取（`read_env`、`read_port_node`、`read_mount_node`、`read_health`、`read_resources`） | `src/engine.cpp` |
-| 校验规则 | `Manifest::validate()`（`src/engine.cpp`） |
-| 继承合并语义 | `Service::merge_from()` + `Manifest::resolve_inheritance()` |
-| 启动顺序 | `Manifest::launch_order()`（Kahn + 声明序破平） |
-| 端口 / 命令解析 | `parse_port()`、`split_command()` |
+| Message 模型 / COW 行为 | `include/containers/Message.hpp` |
+| Any / Optional / ViewPtr | `include/containers/Any.hpp` 等三个头 |
+| 并发队列 / 无锁 SPSC 环形队列 | `include/containers/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
+| 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
 | 单测 | `src/*Test.cpp`（任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
 | 基准 | `benchmarks/**/Benchmark*.cpp` |
+
+特别注意：`SpscQueue` 的环形缓冲里 head/tail 按 cache line 隔开（wake-up handshake
+是 Dekker 型 StoreLoad），改热点索引时必须同步改 padding，否则会退化成
+false-sharing 且竞态唤醒泄漏，动它们之前先读类注释再动测试里的压力用例。
 
 ---
 
@@ -51,15 +55,27 @@ FetchContent。
 `build`，不要用 `build-release` 之类名字。
 
 ```bash
-# 配置（默认 WITH_TESTING/WITH_BENCHMARK/WITH_EXAMPLES/WITH_TOOLS 都是 ON）
+# 配置（默认 WITH_TESTING/WITH_BENCHMARK/WITH_EXAMPLES 都是 ON）
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 # 增量构建
 cmake --build build --parallel 16
 ```
 
-产物：`build/src/containers.lib|a`、`build/tests/containers_tests(.exe)`、
-`build/benchmarks/containers_benchmarks`、`build/tools/containers_cli`、
-`build/examples/basic-goal/example_basic_goal`。
+产物：`build/tests/containers_tests(.exe)`（单测）、
+`build/benchmarks/containers_benchmarks`（基准，联网或离线源码）。header-only 库
+本身没有产物；树内 `examples/CMakeLists.txt` 为空（说明性注释），consumer
+永远不进入树内构建。
+
+### 安装 / 包导出
+
+`cmake --install build --prefix <dir>` 必须产出
+`include/containers/*.hpp`、`lib/cmake/Containers/ContainersConfig.cmake`：它由
+`cmake/ContainersConfig.cmake.in` 加根 `CMakeLists.txt` 末尾的
+`install(EXPORT containersTargets ...)` 生成，导出 `Containers::containers`。
+**没有任何第三方运行时依赖**（纯 C++ 头）。**这条路径有验收工程**：
+`examples/consumer/`（独立工程，不在本树构建）就是用 `<prefix>` 做
+`CMAKE_PREFIX_PATH` 编译并加载 Message/SpscQueue，CI 每个 job 都跑一遍"安装 +
+消费"，改导出规则后要保证它仍然通过。
 
 ### Windows（Clang 19 + Ninja，已实测）
 
@@ -74,35 +90,30 @@ cmake -S . -B build -G Ninja `
 cmake --build build --parallel
 ```
 
-Windows + Clang 的 GNU 驱动有两个已修好的坑，别回退：
-
-1. **CRT 不匹配**：clang 默认静态 CRT，googletest 强制共享 CRT，链接报
-   `lld-link: error: /failifmismatch: mismatch detected for 'RuntimeLibrary'`。
-   根 `CMakeLists.txt` 给 `WIN32 + Clang + 非 MSVC` 加了
-   `add_compile_options(-fms-runtime-lib=dll)` 与 `add_link_options(-fms-runtime-lib=dll)`。
-2. **benchmark 1.8.0 的 `-Winvalid-offsetof`**：MSVC 兼容模式下该警告被升级为错误，
-   上游的 `#pragma` 压不住。`cmake/3rdparty/gbenchmark.cmake` 只对 `benchmark`
-   目标加 `-Wno-invalid-offsetof`。
+Windows + Clang 的 GNU 驱动有一个已修好的坑，别回退：**CRT 不匹配**——clang 默认
+静态 CRT，googletest 强制共享 CRT，链接报 `lld-link: error: /failifmismatch:
+mismatch detected for 'RuntimeLibrary'`。根 `CMakeLists.txt` 给 `WIN32 + Clang +
+非 MSVC` 加了 `add_compile_options(-fms-runtime-lib=dll)` 与
+`add_link_options(-fms-runtime-lib=dll)`。
 
 ### 离线构建
 
-依赖走 `FetchContent`：yaml-cpp 0.9.0（`yaml`）、googletest 固定 commit
-`03597a01ee50ed33e9dfd640b249b4be3799d395`、google benchmark v1.8.0
-（`GoogleBenchmark`）。**yaml-cpp 不要降回 0.7.0 / 0.8.0**：这两个版本在
-`src/emitterutils.cpp` 里用了 `uint16_t` / `uint32_t` 却没 include `<cstdint>`，
-GCC 14+ / Clang 18+（不传递包含它的 libstdc++）直接编译失败；而且它们声明
-`cmake_minimum_required(VERSION 3.4)`，CMake 4 会拒绝配置。0.9.0 两个问题都没有。
-离线时显式指向本地源码：
+依赖走 `FetchContent`：googletest 固定 commit `03597a01ee50ed33e9dfd640b249b4be3799d395`
+（URL 下载 zip）、google benchmark v1.8.0（`GoogleBenchmark`）。
+`-DFETCHCONTENT_FULLY_DISCONNECTED=ON` **不行**：别名目标
+`GTest::gtest` / `benchmark::benchmark` 不会生成。离线时显式指向本地源码：
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-      -DFETCHCONTENT_SOURCE_DIR_YAML=/path/to/yaml-cpp \
-      -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=/path/to/googletest \
-      -DFETCHCONTENT_SOURCE_DIR_GOOGLEBENCHMARK=/path/to/benchmark
+      -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=C:/Code/3rdparty/googletest-1.15.2 \
+      -DFETCHCONTENT_SOURCE_DIR_GOOGLEBENCHMARK=C:/Code/3rdparty/benchmark-1.8.0
 ```
 
-`-DFETCHCONTENT_FULLY_DISCONNECTED=ON` **不行**：别名目标
-`yaml-cpp::yaml-cpp` / `GTest::gtest` / `benchmark::benchmark` 不会生成。
+——本机 `C:/Code/3rdparty/googletest-1.15.2` 当 GOOGLETEST 源，
+`C:/Code/3rdparty/benchmark-1.8.0` 当 GOOGLEBENCHMARK 源，两者都离线可用，所以本机
+`WITH_BENCHMARK=ON` 也能编、能跑。注意 benchmark 1.8.0 没有
+`benchmark::SkipWithError`，要写 `state.SkipWithError(...)`；`MakeMessage` 不接受
+字符串字面量（`std::decay` 后是指针，被 SFINAE 排除），基准里用 `std::string`。
 
 ---
 
@@ -111,16 +122,22 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
 ```bash
 ctest --test-dir build --output-on-failure
 ./build/tests/containers_tests                 # 直接跑
-./build/benchmarks/containers_benchmarks --benchmark_min_time=0.05s
+./build/benchmarks/containers_benchmarks --benchmark_min_time=0.05s   # 联网/离线源码时
 ```
 
-- 当前 **18 个用例 / 7 个 suite**：EngineParse、EngineValidation、PortParsing、
-  CommandSplit、Inheritance、LaunchOrder、Repository（校验仓库自带的
-  `configs/stack.yaml`）。
-- 改引擎（解析、校验、继承、排序）**必须**跑测试；不要为了变绿去改测试语义，
+- 当前 suite：`MessageTest`、`MessageMetaTest`、`AnyTest`、`OptionalThrowingTest`、
+  `ConcurrentQueueTest`、`SpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
+  双线程压力用例）。
+- 改头（解析、COW、队列、唤醒）**必须**跑测试；不要为了变绿去改测试语义，
   要么修实现，要么先说明测试断言本身错了。
-- 实测基线（Clang 19.1.5 / Release / 28 线程机）：`BM_ParseAndValidate` 8 服务
-  178 µs、64 服务 934 µs 级、256 服务 6.6 ms；`BM_LaunchOrder` 64 服务 6.5 µs。
+- 本地实测（Clang 19.1.5 Release）：`ctest` 2/2 通过——`containers_tests` 1.9s
+  （7 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 19s。基准数字
+  基线（16/2048 元素）：`BM_MessageCopy` 0.011/0.011 us、`BM_MessageConstruction`
+  0.093/0.135 us、`BM_MessageCOWDetach` 0.074/0.105 us、`BM_MessageClone`
+  0.065/0.093 us、`BM_SpscQueueMessageTransfer` 0.076 us；拷贝成本与 payload 大小
+  无关正是 COW 的验收点。
+- 基准冒烟（CI 同款）：
+  `./build/benchmarks/containers_benchmarks --benchmark_min_time=0.01s --benchmark_filter=BM_SpscQueueMessageTransfer`。
 
 ---
 
@@ -132,9 +149,9 @@ ctest --test-dir build --output-on-failure
    `std::string_view`、inline 变量、if-init 等）。
 3. **构建目录固定为 `build`**。
 4. 改完必须验证：构建退出码 0 + `containers_tests` 全绿；**跑了就说跑了，没跑就
-   明确说没跑**。
+明确说没跑**。
 5. **行尾**：提交前比对 `git diff --stat` 与 `git diff --stat --ignore-cr-at-eol`，
    避免 CRLF 假 diff。
-6. **清单格式变更要同步**：`configs/stack.yaml`、`README.md` 的字段表、
-   `Repository.CheckedInConfigIsValid` 三处必须一起改。
+6. **清单格式变更要同步**：改头接口时同步更新 `README.md`、`AGENTS.md`、
+   单测（`src/*Test.cpp` 三处必须一起改）。
 7. 汇报带**数字 + 命令原文**；拿不准标"未确认"，不要猜。

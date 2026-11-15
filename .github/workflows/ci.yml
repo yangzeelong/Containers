@@ -37,14 +37,19 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error
 
-      - name: CLI smoke test
-        run: ./build/tools/containers_cli configs/stack.yaml
+      - name: Install and consume the package
+        run: |
+          cmake --install build --prefix "$PWD/stage"
+          cmake -S examples/consumer -B consumer-build -G Ninja \
+                -DCMAKE_PREFIX_PATH="$PWD/stage"
+          cmake --build consumer-build --parallel 4
+          ./consumer-build/consumer
 
       - name: Benchmark smoke test
         run: >-
           ./build/benchmarks/containers_benchmarks
           --benchmark_min_time=0.01s
-          --benchmark_filter=BM_ParseAndValidate/8
+          --benchmark_filter=BM_SpscQueueMessageTransfer
 
   windows:
     name: windows-msvc
@@ -55,8 +60,7 @@ jobs:
 
       # Pin down nothing about which Visual Studio ships with the runner image:
       # vswhere resolves the installed MSVC, and Ninja keeps the generator
-      # independent of the VS version (a hard-coded "Visual Studio 17 2022"
-      # generator fails on images that only carry a newer VS).
+      # independent of the VS version.
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -71,5 +75,15 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error
 
-      - name: CLI smoke test
-        run: ./build/tools/containers_cli.exe configs/stack.yaml
+      - name: Install and consume the package
+        run: |
+          cmake --install build --prefix "$PWD/stage"
+          cmake -S examples/consumer -B consumer-build -G Ninja -DCMAKE_PREFIX_PATH="$PWD/stage"
+          cmake --build consumer-build --parallel 4
+          ./consumer-build/consumer.exe
+
+      - name: Benchmark smoke test
+        run: >-
+          ./build/benchmarks/containers_benchmarks.exe
+          --benchmark_min_time=0.01s
+          --benchmark_filter=BM_SpscQueueMessageTransfer

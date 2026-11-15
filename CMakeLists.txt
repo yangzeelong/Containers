@@ -15,7 +15,6 @@ set(INSTALL_ROOT ${PROJECT_ROOT}/install)
 option(WITH_TESTING "Enable testing (googletest)" ON)
 option(WITH_BENCHMARK "Enable benchmark (google benchmark)" ON)
 option(WITH_EXAMPLES "Enable examples" ON)
-option(WITH_TOOLS "Enable command-line tools (containers_cli)" ON)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     message(STATUS "No build type specified, defaulting to Release")
@@ -36,7 +35,7 @@ if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT MSVC)
     add_link_options(-fms-runtime-lib=dll)
 endif()
 
-### Custom cmake (pulls in yaml-cpp, googletest, google benchmark via FetchContent)
+### Custom cmake (pulls in googletest and google benchmark via FetchContent)
 include("cmake/include.cmake")
 include("cmake/Utils.cmake")
 
@@ -58,6 +57,32 @@ if(WITH_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
-if(WITH_TOOLS)
-    add_subdirectory(tools)
-endif()
+### Install / package config
+#
+# Downstream projects find this package with find_package(Containers CONFIG) and
+# link Containers::containers. The headers are header-only with no third-party
+# runtime dependency.
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+set(CONTAINERS_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Containers)
+
+install(EXPORT containersTargets
+    FILE ContainersTargets.cmake
+    NAMESPACE Containers::
+    DESTINATION ${CONTAINERS_CMAKE_INSTALL_DIR})
+
+configure_package_config_file(
+    cmake/ContainersConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/ContainersConfig.cmake
+    INSTALL_DESTINATION ${CONTAINERS_CMAKE_INSTALL_DIR})
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/ContainersConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/ContainersConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/ContainersConfigVersion.cmake
+    DESTINATION ${CONTAINERS_CMAKE_INSTALL_DIR})
