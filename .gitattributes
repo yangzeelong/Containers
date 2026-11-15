@@ -1,0 +1,13 @@
+# Keep the working tree LF even on Windows (core.autocrlf=true is the Git for
+# Windows default) so `git status` stays clean and CI sees the same bytes.
+* text=auto eol=lf
+
+# Batch/PowerShell helpers stay CRLF for the Windows shells that run them.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets.
+*.png binary
+*.jpg binary
+*.ico binary

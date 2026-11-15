@@ -1,0 +1,76 @@
+# Containers — sample stack
+#
+# A small but complete manifest: a database with a named volume, an API that
+# extends a shared base service, and a cache. Validate it with:
+#
+#   containers_cli configs/stack.yaml
+#
+# or from C++: containers::load_manifest_file(...) + resolve_inheritance().
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [backend]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["pg_isready", "-U", "app"]
+      interval: 10
+      timeout: 3
+      retries: 5
+      start_period: 20
+    resources:
+      cpus: 2
+      memory: 1Gi
+
+  cache:
+    image: redis:7.4
+    restart: always
+    networks: [backend]
+    resources:
+      memory: 512Mi
+
+  api-base:
+    image: my-org/api:1.4.0
+    environment:
+      LOG_LEVEL: info
+      REQUEST_TIMEOUT: "30"
+    networks: [backend, frontend]
+    restart: on-failure
+    healthcheck:
+      test: ["curl", "-fsS", "http://localhost:8080/healthz"]
+      interval: 15
+      timeout: 5
+      retries: 3
+
+  api:
+    extends: api-base
+    depends_on: [db, cache]
+    environment:
+      LOG_LEVEL: debug
+    ports: ["8080:8080"]
+    labels: ["traefik.enable=true"]
+
+  web:
+    image: nginx:1.27.2
+    depends_on: [api]
+    ports: ["80:80"]
+    networks: [frontend]
+    volumes:
+      - static:/usr/share/nginx/html:ro
+
+networks:
+  frontend: {}
+  backend:
+    internal: true
+
+volumes:
+  pgdata: {}
+  static: {}

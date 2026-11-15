@@ -1,0 +1,25 @@
+# Dot-files are ignored by default; the allowlist below keeps the repository's
+# own configuration tracked.
+.*
+!.clang-format
+!.clangd
+!.gitattributes
+!.gitignore
+!.github/
+
+# Build trees and install output.
+build
+build-*
+install/
+output/
+
+# Local scratch space.
+tmp/
+data/
+*.log
+
+# Editor and tool caches.
+.vs/
+.vscode/
+.cache/
+compile_commands.json

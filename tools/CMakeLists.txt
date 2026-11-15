@@ -1,0 +1,3 @@
+add_executable(containers_cli containers_cli.cpp)
+containers_enable_warnings(containers_cli)
+target_link_libraries(containers_cli PRIVATE containers)
