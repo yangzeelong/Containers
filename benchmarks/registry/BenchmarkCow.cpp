@@ -11,7 +11,7 @@ void BM_CowBorrowedRead(benchmark::State& state) {
     const std::vector<int> payload(static_cast<std::size_t>(state.range(0)), 1);
     for (auto _ : state) {
         auto cow = containers::Cow<std::vector<int>>::Borrowed(payload);
-        benchmark::DoNotOptimize(cow.get());
+        benchmark::DoNotOptimize(cow);
     }
 }
 
@@ -20,7 +20,7 @@ void BM_CowCopyShared(benchmark::State& state) {
         std::vector<int>(static_cast<std::size_t>(state.range(0)), 1));
     for (auto _ : state) {
         auto copy = cow;
-        benchmark::DoNotOptimize(copy.get());
+        benchmark::DoNotOptimize(copy);
     }
 }
 
