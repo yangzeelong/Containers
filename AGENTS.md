@@ -15,7 +15,7 @@
   `Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
 - `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`。
 - `concurrency/`：并发原语——阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者
-  环形队列 `SpscQueue`、`AtomicSharedPtr`。
+  环形队列 `SpscQueue`、`AtomicSharedPtr`、无锁多生产者单消费者 `MpscQueue`。
 
 **它不依赖任何框架运行时**：没有 pipeline、没有消息执行、没有调度——每个组件都能
 独立使用，全部行为（拷贝、分离、进出队、阻塞、唤醒）可以在单测、CI、甚至没装任何
@@ -30,7 +30,7 @@
 | `include/containers/message/Message.hpp` | COW 消息容器 + 消息元数据 |
 | `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、StringView、Result、Unit、Cow、OnceCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
 | `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap） |
-| `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、AtomicSharedPtr） |
+| `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、AtomicSharedPtr、MpscQueue） |
 | `tests/` | 单测（按组件分组：message/stdx/collections/concurrency/bench，自动编译进 `containers_tests`） |
 | `benchmarks/` | Google Benchmark（同样按组件分组）+ `benchmark_main.cpp`；`benchmarks/perf/` 是 perf-eval runner |
 | `benchmarks/perf/` | `containers_perf_eval`：目标阈值判定 + Markdown 报告 |
@@ -59,6 +59,7 @@
 | SlotMap | `include/containers/collections/SlotMap.hpp` |
 | 性能评估框架 | `include/containers/bench/PerfEval.hpp` + `benchmarks/perf/PerfEvaluatorMain.cpp` |
 | 并发队列 / 无锁 SPSC 环形队列 | `include/containers/concurrency/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
+| MpscQueue（无锁 MPSC 队列） | `include/containers/concurrency/MpscQueue.hpp` |
 | 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
 | 单测 | `tests/**/*Test.cpp`（按组件分组，任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
 | 基准 | `benchmarks/**/Benchmark*.cpp` |
@@ -149,7 +150,7 @@ ctest --test-dir build --output-on-failure
 ```
 
 - 当前 suite：`MessageTest`、`MessageMetaTest`、`AnyTest`、`OptionalThrowingTest`、
-  `ConcurrentQueueTest`、`SpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
+  `ConcurrentQueueTest`、`SpscQueueTest`、`MpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
   双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`、
   `OnceCellTest`、`CellTest`、`RefCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
   `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`SharedStrTest`、
