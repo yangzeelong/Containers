@@ -8,6 +8,5 @@ message(STATUS "  Version                                              : ${PROJE
 message(STATUS "Option:")
 message(STATUS "  WITH_TESTING                                         : ${WITH_TESTING}")
 message(STATUS "  WITH_BENCHMARK                                       : ${WITH_BENCHMARK}")
-message(STATUS "  WITH_EXAMPLES                                        : ${WITH_EXAMPLES}")
 message(STATUS "Install Dir                                            : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "*********************************************************************")

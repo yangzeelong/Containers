@@ -6,7 +6,6 @@
 
 #include <cstdio>
 #include <string>
-#include <vector>
 
 int main(int /*argc*/, char** /*argv*/) {
     // The message is copy-on-write: the copy shares one control block until

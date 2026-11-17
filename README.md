@@ -1,39 +1,44 @@
-# Containers (cs): Common Message & Queue Containers for C++14
+# Containers (cs): Header-Only C++14 Container Library
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/yangzeelong/Containers/actions)
+[![ci](https://github.com/yangzeelong/Containers/actions/workflows/ci.yml/badge.svg)](https://github.com/yangzeelong/Containers/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++_Version](https://img.shields.io/badge/C++-14%2B-blue.svg)]()
 
-**Containers** (friends call it **cs**) is a header-only, C++14 common library of
-the message and queue containers that a family of frameworks reuse. It takes its
-components from the NexusFlow test bed and publishes them as a standalone
-package: a type-erased **Copy-On-Write message**, a `std::any`-style variant, a
-Rust-style optional, a non-owning pointer view, a blocking concurrent queue and a
-lock-free single-producer/single-consumer ring queue.
+**Containers** (friends call it **cs**) is a header-only C++14 container library:
+a reusable set of containers, utility types and concurrency primitives that other
+C++14 projects consume as a package. Everything lives in the `containers::`
+namespace and installs with `find_package(Containers CONFIG)`.
 
-It deliberately **never reaches for a framework runtime**: there is no pipeline, no
-message executor, no scheduling — a message is just data. The whole library is
-header-only, so the entire chain — copy, detach, queue, enqueue, block, wake — runs
-in unit tests, in CI, or offline on any machine.
+The library is deliberately self-contained — it contains no framework runtime, no
+pipeline, no executor and no scheduling. Every component is usable on its own, so
+the whole surface (copies, detach, queues, blocking, wake-up) runs in unit tests,
+in CI, or on a machine with nothing else installed. Third-party dependencies
+(googletest for tests, Google Benchmark for benchmarks) are build-time only and
+never enter the installed package.
 
 ## Features
+
+### Message and type erasure
 
 *   **Copy-On-Write message** — `containers::Message` holds any copy-constructible
     payload behind one `shared_ptr`. Copying a `Message` clones only the control
     block; the payload is deep-copied on the first mutable access (`Mut<T>()` /
-    `MutPtr<T>()`), so broadcast-into-many-pipelines is cheap while copies stay
-    independent. It also carries per-stage timing metadata that is itself copy-on-write.
+    `MutPtr<T>()`), so broadcasting one message to many consumers is cheap while
+    copies stay independent. It also carries per-stage timing metadata that is
+    itself copy-on-write.
 *   **Type-erased variant** — `containers::Any` is a simplified, C++14-compatible
     `std::any`: typed lookup, deep copy on copy.
+*   **Rust-style optional** — `Optional<T>` uses manual placement construction with
+    exception-safe `reset()`/assignment (global namespace on purpose, to match the
+    interface it was originally extracted from).
+*   **Non-owning pointer view** — `ViewPtr<T>` is a zero-cost wrapper explicitly
+    modelling "I don't own it", with `std::hash` support for unordered containers.
+
+### General-purpose containers
+
 *   **Rust-style result** — `containers::Result<T, E>` with a `Result<void, E>`
     specialization, `map` / `mapErr` / `andThen` / `unwrapOr`, plus a `Unit` type
     for empty payloads. C++14, no exceptions required.
-*   **Rust-style optional** — `Optional<T>` uses manual placement construction with
-    exception-safe `reset()`/assignment (global namespace, as in the upstream test bed).
-*   **Non-owning pointer view** — `ViewPtr<T>` is a zero-cost wrapper explicitly
-    modelling "I don't own it", with `std::hash` support for unordered containers.
-*   **Scope guard** — `ScopedGuard` / `OnScopeExit` runs a callable on scope exit
-    unless dismissed, for rollback and cleanup paths that must not be forgotten.
 *   **Rust-style Cow** — `containers::Cow<T>` is either borrowed or owned; reads
     are free and the first `toMut()` deep-copies, the same contract as
     `std::borrow::Cow`.
@@ -55,15 +60,20 @@ in unit tests, in CI, or offline on any machine.
     insertion order, with O(1) `swapErase` and order-preserving `erase`.
 *   **Stable slots** — `SlotMap<T>` hands out generation-tagged `SlotKey`s, so a
     stale key can never alias a reused slot (`clear` invalidates every key).
-*   **Zero-copy Bytes payloads** — a `Message` can carry `containers::Bytes`;
-    copying the message is one ref-count bump and `Borrow<Bytes>()` never copies
-    the buffer (the `MessageBytesTest` suite pins this down).
+*   **Scope guard** — `ScopedGuard` / `OnScopeExit` runs a callable on scope exit
+    unless dismissed, for rollback and cleanup paths that must not be forgotten.
+
+### Concurrency
+
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
 *   **Lock-free SPSC ring queue** — `SpscQueue<T>` is a bounded single-producer/
     single-consumer ring buffer with cache-line-padded hot indices, Dekker-correct
     wake-up handshake and a spin/condition-variable blocking path. A non-positive
     capacity transparently falls back to `ConcurrentQueue`.
+*   **Zero-copy Bytes payloads** — a `Message` can carry `containers::Bytes`;
+    copying the message is one ref-count bump and `Borrow<Bytes>()` never copies
+    the buffer (the `MessageBytesTest` suite pins this down).
 
 ## Quick Start
 
@@ -114,11 +124,10 @@ override.
 | `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
 | `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
 | `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
-| `benchmarks/registry/` | Google Benchmark suites for copy, COW detach, clone, queue transfer, Result |
+| `tests/` | Test runner (`gtest_main.cpp`) and the test-target CMake glue |
+| `benchmarks/registry/` | Google Benchmark suites for copy, COW detach, clone, queue transfer, Bytes, IndexMap, SlotMap, ... |
 | `benchmarks/perf/` | `containers_perf_eval`: targets, verdicts and a Markdown report |
 | `examples/consumer/` | Standalone downstream project: `find_package(Containers CONFIG)` + install prefix |
-| `configs/` | Removed when the compose engine left |
-| `tools/` | Removed with the compose engine |
 | `cmake/` | `include.cmake`, `Utils.cmake`, `Summary.cmake`, `3rdparty/*.cmake`, `ContainersConfig.cmake.in` |
 | `.github/workflows/ci.yml` | Linux (gcc, clang) and Windows (MSVC) build + test + install-consume + benchmark smoke |
 
@@ -136,8 +145,8 @@ Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
 `NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`,
 `IndexMapTest`, `SlotMapTest`, `MessageBytesTest`, `PerfEvalTest`. Test sources
-are found by suffix: any `*Test.cpp` is compiled into `containers_tests`,
-mirroring Nexusflow's convention.
+are found by suffix: any `*Test.cpp` is compiled into `containers_tests`, so a
+test file dropped next to its header is picked up automatically.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
 treat as a baseline, not a contract):
@@ -159,7 +168,7 @@ Google Benchmark answers "how fast is this case". The evaluation runner answers
 "does this build still meet its targets" and exits non-zero when a case misses:
 
 ```bash
-./build/benchmarks/containers_perf_eval --rounds 15 --iterations 2000 --warmup 2 \
+./build/benchmarks/containers_perf_eval --rounds 15 --iterations 2000 --warmup 2 \\
     --output perf_report.md
 ```
 

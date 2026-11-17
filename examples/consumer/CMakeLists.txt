@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Standalone downstream project: it is NOT part of the Containers build tree
-# (examples/CMakeLists.txt only adds consumer). Point CMAKE_PREFIX_PATH at a
+# (the top-level CMakeLists never adds this directory). Point CMAKE_PREFIX_PATH at a
 # `cmake --install` prefix to build it outside the tree:
 #
 #   cmake -S examples/consumer -B consumer-build -DCMAKE_PREFIX_PATH=<prefix>

@@ -1,6 +1,6 @@
 include(FetchContent)
 
-# Pinned by commit (same revision Nexusflow uses) so test builds are reproducible.
+# Pinned by commit so test builds are reproducible across machines and CI runners.
 FetchContent_Declare(
     googletest
     URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip

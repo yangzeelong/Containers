@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 project(Containers VERSION 0.1.0 LANGUAGES CXX)
 
-# C++14 deliberately: the checked-in configs, tests and benchmarks are exercised
-# on the same toolchain as Nexusflow, so header-only code can be shared.
+# C++14 deliberately: every public header, test and benchmark targets the same
+# C++14 baseline, so downstream projects on C++14 can adopt the library as-is.
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
@@ -14,7 +14,6 @@ set(INSTALL_ROOT ${PROJECT_ROOT}/install)
 ### Options
 option(WITH_TESTING "Enable testing (googletest)" ON)
 option(WITH_BENCHMARK "Enable benchmark (google benchmark)" ON)
-option(WITH_EXAMPLES "Enable examples" ON)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     message(STATUS "No build type specified, defaulting to Release")
@@ -51,10 +50,6 @@ endif()
 
 if(WITH_BENCHMARK)
     add_subdirectory(benchmarks)
-endif()
-
-if(WITH_EXAMPLES)
-    add_subdirectory(examples)
 endif()
 
 ### Install / package config
