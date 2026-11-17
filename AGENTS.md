@@ -13,7 +13,7 @@
 - `message/`：**Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝语义）。
 - `stdx/`：Rust 风格的基础类型与 std 扩展——`Any`、`Optional`、`ViewPtr`、`StringView`、
   `Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
-- `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`。
+- `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`、`BitSet`。
 - `concurrency/`：并发原语——阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者
   环形队列 `SpscQueue`、`AtomicSharedPtr`。
 
@@ -29,7 +29,7 @@
 | --- | --- |
 | `include/containers/message/Message.hpp` | COW 消息容器 + 消息元数据 |
 | `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、StringView、Result、Unit、Cow、OnceCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
-| `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap） |
+| `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap、BitSet） |
 | `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、AtomicSharedPtr） |
 | `tests/` | 单测（按组件分组：message/stdx/collections/concurrency/bench，自动编译进 `containers_tests`） |
 | `benchmarks/` | Google Benchmark（同样按组件分组）+ `benchmark_main.cpp`；`benchmarks/perf/` 是 perf-eval runner |
@@ -57,6 +57,7 @@
 | SharedStr | `include/containers/stdx/SharedStr.hpp` |
 | IndexMap | `include/containers/collections/IndexMap.hpp` |
 | SlotMap | `include/containers/collections/SlotMap.hpp` |
+| BitSet（动态位集） | `include/containers/collections/BitSet.hpp` |
 | 性能评估框架 | `include/containers/bench/PerfEval.hpp` + `benchmarks/perf/PerfEvaluatorMain.cpp` |
 | 并发队列 / 无锁 SPSC 环形队列 | `include/containers/concurrency/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
 | 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
@@ -152,7 +153,7 @@ ctest --test-dir build --output-on-failure
   `ConcurrentQueueTest`、`SpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
   双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`、
   `OnceCellTest`、`CellTest`、`RefCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
-  `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`SharedStrTest`、
+  `NonZeroTest`、`BitSetTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`SharedStrTest`、
   `IndexMapTest`、`SlotMapTest`、`StringViewTest`、`MessageBytesTest`、`PerfEvalTest`。
 - 改头（解析、COW、队列、唤醒）**必须**跑测试；不要为了变绿去改测试语义，
   要么修实现，要么先说明测试断言本身错了。
