@@ -1,5 +1,5 @@
-#ifndef CONTAINERS_COMMON_VIEW_PTR_HPP
-#define CONTAINERS_COMMON_VIEW_PTR_HPP
+#ifndef CONTAINERS_VIEW_PTR_HPP
+#define CONTAINERS_VIEW_PTR_HPP
 
 #include <cassert>
 #include <functional>
@@ -115,4 +115,4 @@ inline ViewPtr<T> makeViewPtr(T* ptr) noexcept {
     return ViewPtr<T>(ptr);
 }
 
-#endif // CONTAINERS_COMMON_VIEW_PTR_HPP
+#endif // CONTAINERS_VIEW_PTR_HPP

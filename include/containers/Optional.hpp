@@ -1,5 +1,5 @@
-#ifndef CONTAINERS_COMMON_OPTIONAL_HPP_
-#define CONTAINERS_COMMON_OPTIONAL_HPP_
+#ifndef CONTAINERS_OPTIONAL_HPP
+#define CONTAINERS_OPTIONAL_HPP
 
 #include <memory>
 #include <type_traits>
@@ -152,4 +152,4 @@ class Optional<std::reference_wrapper<T>> {
     static_assert(is_always_false<T>::value, "Not Support Reference Type Now.");
 };
 
-#endif // CONTAINERS_COMMON_OPTIONAL_HPP_
+#endif // CONTAINERS_OPTIONAL_HPP

@@ -6,18 +6,21 @@
 
 ## 1. 这是什么项目
 
-**Containers（朋友们简称 cs）**：C++14 的**公共消息与队列容器库**——从 NexusFlow
-测试床里整理出来的通用容器组件，纯 header-only 对外分发。核心能力：
+**Containers（朋友们简称 cs）**：C++14 的**通用容器库**，纯 header-only 对外分发，
+供其他 C++14 项目按需引用（`find_package(Containers CONFIG)`）。组件覆盖三类：
 
-- 类型擦除的 **Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝语义）。
-- 类型擦除变体 `Any`、Rust 风格手工取位的 `Optional`、非拥有指针包装 `ViewPtr`。
-- 阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者环形队列 `SpscQueue`。
+- 消息与类型擦除：**Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝
+  语义）、`Any`、Rust 风格手工取位的 `Optional`、非拥有指针包装 `ViewPtr`。
+- 通用容器 / 工具：`Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`Bytes`/`BytesMut`、
+  `BitFlags`、`NonZero`、`SmallVec`、`AtomicSharedPtr`、`SharedStr`、`IndexMap`、
+  `SlotMap`、`ScopedGuard`。
+- 并发：阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者环形队列 `SpscQueue`。
 
-**它不接触任何容器运行时或框架执行器**：没有 pipeline、没有消息执行、没有调度——
-消息只是数据，所以整条链路（拷贝、分离、进出队、阻塞、唤醒）可以在单测、CI、
-甚至没装任何框架的机器上跑。
+**它不依赖任何框架运行时**：没有 pipeline、没有消息执行、没有调度——每个组件都能
+独立使用，全部行为（拷贝、分离、进出队、阻塞、唤醒）可以在单测、CI、甚至没装任何
+框架的机器上验证。
 
-约定与 `C:\Code\Nexusflow` 保持一致：`*Test.cpp` 后缀自动归入测试目标。
+`*Test.cpp` 后缀自动归入测试目标（沿用上游工程的约定）。
 第三方依赖只剩 googletest（单测）与 google benchmark（基准），都通过
 `cmake/3rdparty/*.cmake` 的 FetchContent 引入。
 
@@ -27,7 +30,7 @@
 | `include/containers/Any.hpp` `Optional.hpp` `ViewPtr.hpp` | 变体 / 可选 / 指针视图 |
 | `include/containers/ConcurrentQueue.hpp` `SpscQueue.hpp` | 阻塞队列 / 无锁 SPSC 环形队列 |
 | `src/*Test.cpp` | colocated 单测（自动编译进 `containers_tests`） |
-| `benchmarks/registry/` | Google Benchmark：拷贝、COW 分离、Clone、队列传送 |
+| `benchmarks/registry/` | Google Benchmark：拷贝、COW 分离、Clone、队列传送、Bytes/IndexMap/SlotMap 等 |
 | `benchmarks/perf/` | `containers_perf_eval`：目标阈值判定 + Markdown 报告 |
 | `examples/consumer/` | 独立下游工程：`find_package(Containers CONFIG)`，只对着 `cmake --install` 的前缀构建，不进入本树 |
 | `cmake/` | `include.cmake`、`Utils.cmake`、`Summary.cmake`、`3rdparty/*.cmake`、`ContainersConfig.cmake.in` |
@@ -70,16 +73,17 @@ false-sharing 且竞态唤醒泄漏，动它们之前先读类注释再动测试
 `build`，不要用 `build-release` 之类名字。
 
 ```bash
-# 配置（默认 WITH_TESTING/WITH_BENCHMARK/WITH_EXAMPLES 都是 ON）
+# 配置（默认 WITH_TESTING/WITH_BENCHMARK 都是 ON）
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 # 增量构建
 cmake --build build --parallel 16
 ```
 
 产物：`build/tests/containers_tests(.exe)`（单测）、
-`build/benchmarks/containers_benchmarks`（基准，联网或离线源码）。header-only 库
-本身没有产物；树内 `examples/CMakeLists.txt` 为空（说明性注释），consumer
-永远不进入树内构建。
+`build/benchmarks/containers_benchmarks`（基准，联网或离线源码）、
+`build/benchmarks/containers_perf_eval`（目标阈值判定）。header-only 库本身没有
+产物；`examples/consumer` 是独立工程，永远不进入树内构建，只由 CI 在
+`cmake --install` 之后用 `find_package` 消费。
 
 ### 安装 / 包导出
 
@@ -156,7 +160,7 @@ ctest --test-dir build --output-on-failure
   `--tolerance` 给默认容差，超标退出码 1，`--no-check` 只出报告。`ctest` 跑一条
   `--no-check` 短冒烟，保证框架本身不腐化。
 - 本地实测（Clang 19.1.5 Release）：`ctest` 3/3 通过——`containers_tests` 1.9s
-  （7 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 19s。基准数字
+  （24 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 76s。基准数字
   基线（16/2048 元素）：`BM_MessageCopy` 0.011/0.011 us、`BM_MessageConstruction`
   0.093/0.135 us、`BM_MessageCOWDetach` 0.074/0.105 us、`BM_MessageClone`
   0.065/0.093 us、`BM_SpscQueueMessageTransfer` 0.076 us；拷贝成本与 payload 大小

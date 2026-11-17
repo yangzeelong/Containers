@@ -1,5 +1,5 @@
-#ifndef CONTAINERS_COMMON_SPSC_QUEUE_HPP
-#define CONTAINERS_COMMON_SPSC_QUEUE_HPP
+#ifndef CONTAINERS_SPSC_QUEUE_HPP
+#define CONTAINERS_SPSC_QUEUE_HPP
 
 #include "containers/ConcurrentQueue.hpp"
 #include "containers/Optional.hpp"
@@ -515,4 +515,4 @@ private:
 
 } // namespace containers
 
-#endif // CONTAINERS_COMMON_SPSC_QUEUE_HPP
+#endif // CONTAINERS_SPSC_QUEUE_HPP
