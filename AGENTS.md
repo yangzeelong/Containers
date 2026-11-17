@@ -21,7 +21,7 @@
 独立使用，全部行为（拷贝、分离、进出队、阻塞、唤醒）可以在单测、CI、甚至没装任何
 框架的机器上验证。
 
-`*Test.cpp` 后缀自动归入测试目标（沿用上游工程的约定）。
+测试代码统一放在 `tests/` 下（按组件分组），`*Test.cpp` 后缀自动归入测试目标。
 第三方依赖只剩 googletest（单测）与 google benchmark（基准），都通过
 `cmake/3rdparty/*.cmake` 的 FetchContent 引入。
 
@@ -31,8 +31,8 @@
 | `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、Result、Unit、Cow、OnceCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
 | `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap） |
 | `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、AtomicSharedPtr） |
-| `src/*Test.cpp` | colocated 单测（自动编译进 `containers_tests`） |
-| `benchmarks/registry/` | Google Benchmark：拷贝、COW 分离、Clone、队列传送、Bytes/IndexMap/SlotMap 等 |
+| `tests/` | 单测（按组件分组：message/stdx/collections/concurrency/bench，自动编译进 `containers_tests`） |
+| `benchmarks/` | Google Benchmark（同样按组件分组）+ `benchmark_main.cpp`；`benchmarks/perf/` 是 perf-eval runner |
 | `benchmarks/perf/` | `containers_perf_eval`：目标阈值判定 + Markdown 报告 |
 | `examples/consumer/` | 独立下游工程：`find_package(Containers CONFIG)`，只对着 `cmake --install` 的前缀构建，不进入本树 |
 | `cmake/` | `include.cmake`、`Utils.cmake`、`Summary.cmake`、`3rdparty/*.cmake`、`ContainersConfig.cmake.in` |
@@ -59,7 +59,7 @@
 | 性能评估框架 | `include/containers/bench/PerfEval.hpp` + `benchmarks/perf/PerfEvaluatorMain.cpp` |
 | 并发队列 / 无锁 SPSC 环形队列 | `include/containers/concurrency/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
 | 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
-| 单测 | `src/*Test.cpp`（任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
+| 单测 | `tests/**/*Test.cpp`（按组件分组，任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
 | 基准 | `benchmarks/**/Benchmark*.cpp` |
 | 性能评估用例 / 阈值 | `benchmarks/perf/PerfEvaluatorMain.cpp`（`AddCase` 一处注册） |
 
@@ -184,5 +184,5 @@ ctest --test-dir build --output-on-failure
 5. **行尾**：提交前比对 `git diff --stat` 与 `git diff --stat --ignore-cr-at-eol`，
    避免 CRLF 假 diff。
 6. **清单格式变更要同步**：改头接口时同步更新 `README.md`、`AGENTS.md`、
-   单测（`src/*Test.cpp` 三处必须一起改）。
+   单测（`tests/**/*Test.cpp` 三处必须一起改）。
 7. 汇报带**数字 + 命令原文**；拿不准标"未确认"，不要猜。
