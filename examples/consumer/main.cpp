@@ -1,8 +1,8 @@
 // Downstream consumer: proves that find_package(Containers CONFIG) exports a
 // usable target (Containers::containers) and that the installed headers are
 // self-contained.
-#include "containers/Message.hpp"
-#include "containers/SpscQueue.hpp"
+#include "containers/message/Message.hpp"
+#include "containers/concurrency/SpscQueue.hpp"
 
 #include <cstdio>
 #include <string>

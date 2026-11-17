@@ -5,12 +5,12 @@
 // Cases either compare against a reference case measured in the same run (so
 // the verdict survives different machines) or against an absolute ns/op limit.
 
-#include <containers/Bytes.hpp>
-#include <containers/Cow.hpp>
-#include <containers/Message.hpp>
-#include <containers/OnceCell.hpp>
-#include <containers/SharedStr.hpp>
-#include <containers/SmallVec.hpp>
+#include <containers/collections/Bytes.hpp>
+#include <containers/stdx/Cow.hpp>
+#include <containers/message/Message.hpp>
+#include <containers/stdx/OnceCell.hpp>
+#include <containers/stdx/SharedStr.hpp>
+#include <containers/collections/SmallVec.hpp>
 #include <containers/bench/PerfEval.hpp>
 
 #include <cstddef>

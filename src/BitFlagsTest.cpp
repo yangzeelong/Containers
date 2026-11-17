@@ -1,4 +1,4 @@
-#include <containers/BitFlags.hpp>
+#include <containers/stdx/BitFlags.hpp>
 
 #include <gtest/gtest.h>
 

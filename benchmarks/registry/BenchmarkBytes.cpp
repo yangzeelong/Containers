@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/Bytes.hpp>
+#include <containers/collections/Bytes.hpp>
 
 #include <cstddef>
 #include <cstdint>

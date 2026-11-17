@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/SmallVec.hpp>
+#include <containers/collections/SmallVec.hpp>
 
 #include <vector>
 

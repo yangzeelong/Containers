@@ -1,4 +1,4 @@
-#include <containers/SlotMap.hpp>
+#include <containers/collections/SlotMap.hpp>
 
 #include <gtest/gtest.h>
 

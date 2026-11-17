@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/Cow.hpp>
+#include <containers/stdx/Cow.hpp>
 
 #include <cstddef>
 #include <vector>

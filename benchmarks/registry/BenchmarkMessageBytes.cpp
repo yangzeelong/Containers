@@ -1,7 +1,7 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/Bytes.hpp>
-#include <containers/Message.hpp>
+#include <containers/collections/Bytes.hpp>
+#include <containers/message/Message.hpp>
 
 #include <cstdint>
 #include <string>

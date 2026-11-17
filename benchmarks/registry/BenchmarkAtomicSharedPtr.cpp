@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/AtomicSharedPtr.hpp>
+#include <containers/concurrency/AtomicSharedPtr.hpp>
 
 #include <memory>
 

@@ -1,4 +1,4 @@
-#include "containers/ConcurrentQueue.hpp"
+#include "containers/concurrency/ConcurrentQueue.hpp"
 
 #include <gtest/gtest.h>
 

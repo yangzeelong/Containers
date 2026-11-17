@@ -1,7 +1,7 @@
 #ifndef CONTAINERS_CONCURRENT_QUEUE_HPP
 #define CONTAINERS_CONCURRENT_QUEUE_HPP
 
-#include "containers/Optional.hpp"
+#include "containers/stdx/Optional.hpp"
 
 #include <chrono>
 #include <condition_variable>

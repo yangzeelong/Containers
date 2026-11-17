@@ -1,4 +1,4 @@
-#include "containers/Message.hpp"
+#include "containers/message/Message.hpp"
 
 #include <gtest/gtest.h>
 

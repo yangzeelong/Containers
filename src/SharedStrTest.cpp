@@ -1,4 +1,4 @@
-#include <containers/SharedStr.hpp>
+#include <containers/stdx/SharedStr.hpp>
 
 #include <gtest/gtest.h>
 

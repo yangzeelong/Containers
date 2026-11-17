@@ -1,13 +1,15 @@
-# Containers (cs): Header-Only C++14 Container Library
+# Containers (cs): Header-Only C++14 Containers & Std Extensions
 
 [![ci](https://github.com/yangzeelong/Containers/actions/workflows/ci.yml/badge.svg)](https://github.com/yangzeelong/Containers/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++_Version](https://img.shields.io/badge/C++-14%2B-blue.svg)]()
 
-**Containers** (friends call it **cs**) is a header-only C++14 container library:
-a reusable set of containers, utility types and concurrency primitives that other
-C++14 projects consume as a package. Everything lives in the `containers::`
-namespace and installs with `find_package(Containers CONFIG)`.
+**Containers** (friends call it **cs**) is a header-only C++14 library of
+Rust-inspired `std` extensions (`stdx/`), general-purpose containers
+(`collections/`), concurrency primitives (`concurrency/`) and a copy-on-write
+message type (`message/`). Other C++14 projects consume it as a package.
+Everything lives in the `containers::` namespace and installs with
+`find_package(Containers CONFIG)`.
 
 The library is deliberately self-contained — it contains no framework runtime, no
 pipeline, no executor and no scheduling. Every component is usable on its own, so
@@ -18,7 +20,11 @@ never enter the installed package.
 
 ## Features
 
-### Message and type erasure
+The include tree mirrors the API groups — `message/`, `stdx/`, `collections/`,
+`concurrency/` — while the namespace stays flat (`containers::`) and every header
+is included individually.
+
+### `message/` — copy-on-write messages
 
 *   **Copy-On-Write message** — `containers::Message` holds any copy-constructible
     payload behind one `shared_ptr`. Copying a `Message` clones only the control
@@ -26,6 +32,12 @@ never enter the installed package.
     `MutPtr<T>()`), so broadcasting one message to many consumers is cheap while
     copies stay independent. It also carries per-stage timing metadata that is
     itself copy-on-write.
+*   **Zero-copy Bytes payloads** — a `Message` can carry `containers::Bytes`;
+    copying the message is one ref-count bump and `Borrow<Bytes>()` never copies
+    the buffer (the `MessageBytesTest` suite pins this down).
+
+### `stdx/` — Rust-inspired std extensions
+
 *   **Type-erased variant** — `containers::Any` is a simplified, C++14-compatible
     `std::any`: typed lookup, deep copy on copy.
 *   **Rust-style optional** — `Optional<T>` uses manual placement construction with
@@ -33,9 +45,6 @@ never enter the installed package.
     interface it was originally extracted from).
 *   **Non-owning pointer view** — `ViewPtr<T>` is a zero-cost wrapper explicitly
     modelling "I don't own it", with `std::hash` support for unordered containers.
-
-### General-purpose containers
-
 *   **Rust-style result** — `containers::Result<T, E>` with a `Result<void, E>`
     specialization, `map` / `mapErr` / `andThen` / `unwrapOr`, plus a `Unit` type
     for empty payloads. C++14, no exceptions required.
@@ -44,26 +53,27 @@ never enter the installed package.
     `std::borrow::Cow`.
 *   **Lazy initialization** — `OnceCell<T>` initializes at most once through a
     factory (thread-safe `std::call_once`), `Lazy<T>` wraps it behind `*`/`->`.
-*   **Ref-counted byte buffers** — `Bytes` clones and slices share storage,
-    `BytesMut` grows mutably and `freeze()` hands the buffer over without copying.
 *   **Typed bit flags** — `BitFlags<Enum>` wraps an enum's bit pattern with
     `contains` / `insert` / `remove` and `|`, `&`, `^`, `~` operators.
 *   **Non-zero integers** — `NonZero<T>` encodes the "never zero" invariant;
     `TryNew` returns an empty `Optional` instead of asserting.
-*   **Small vectors** — `SmallVec<T, N>` stores up to `N` elements inline and
-    promotes to a heap vector on the first overflow, like Rust's `smallvec`.
-*   **Atomic shared_ptr** — `AtomicSharedPtr<T>` is a C++14 stand-in for C++20's
-    `std::atomic<std::shared_ptr<T>>` (mutex-based load/store/exchange/CAS).
 *   **Shared strings** — `SharedStr` is `Arc<str>`: immutable, cheap to clone and
     slice, with content comparison and `SharedStrHash` for unordered containers.
+*   **Scope guard** — `ScopedGuard` / `OnScopeExit` runs a callable on scope exit
+    unless dismissed, for rollback and cleanup paths that must not be forgotten.
+
+### `collections/` — general-purpose containers
+
+*   **Ref-counted byte buffers** — `Bytes` clones and slices share storage,
+    `BytesMut` grows mutably and `freeze()` hands the buffer over without copying.
+*   **Small vectors** — `SmallVec<T, N>` stores up to `N` elements inline and
+    promotes to a heap vector on the first overflow, like Rust's `smallvec`.
 *   **Insertion-ordered map** — `IndexMap<K, V>` is a hash map that iterates in
     insertion order, with O(1) `swapErase` and order-preserving `erase`.
 *   **Stable slots** — `SlotMap<T>` hands out generation-tagged `SlotKey`s, so a
     stale key can never alias a reused slot (`clear` invalidates every key).
-*   **Scope guard** — `ScopedGuard` / `OnScopeExit` runs a callable on scope exit
-    unless dismissed, for rollback and cleanup paths that must not be forgotten.
 
-### Concurrency
+### `concurrency/` — queues and shared ownership
 
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
@@ -71,9 +81,8 @@ never enter the installed package.
     single-consumer ring buffer with cache-line-padded hot indices, Dekker-correct
     wake-up handshake and a spin/condition-variable blocking path. A non-positive
     capacity transparently falls back to `ConcurrentQueue`.
-*   **Zero-copy Bytes payloads** — a `Message` can carry `containers::Bytes`;
-    copying the message is one ref-count bump and `Borrow<Bytes>()` never copies
-    the buffer (the `MessageBytesTest` suite pins this down).
+*   **Atomic shared_ptr** — `AtomicSharedPtr<T>` is a C++14 stand-in for C++20's
+    `std::atomic<std::shared_ptr<T>>` (mutex-based load/store/exchange/CAS).
 
 ## Quick Start
 
@@ -102,28 +111,13 @@ override.
 
 | Path | Contents |
 | --- | --- |
-| `include/containers/Message.hpp` | Copy-on-write message + message metadata |
-| `include/containers/Any.hpp` | Type-erased variant |
-| `include/containers/Optional.hpp` | Rust-style optional |
-| `include/containers/ViewPtr.hpp` | Non-owning pointer view + std::hash |
-| `include/containers/Result.hpp` | Rust-style `Result<T, E>` + combinators |
-| `include/containers/Unit.hpp` | `()`-style empty value type |
-| `include/containers/Config.hpp` | `CS_NODISCARD` feature shim |
-| `include/containers/ScopedGuard.hpp` | Scope-exit callable (`OnScopeExit`) |
-| `include/containers/Cow.hpp` | Borrowed/owned `Cow<T>` with copy-on-write `toMut()` |
-| `include/containers/OnceCell.hpp` | `OnceCell<T>` / `Lazy<T>` lazy initialization |
-| `include/containers/Bytes.hpp` | Ref-counted `Bytes` / mutable `BytesMut` |
-| `include/containers/BitFlags.hpp` | Typed bit flags over an enum |
-| `include/containers/NonZero.hpp` | Non-zero integer wrappers (`NonZeroU32`, ...) |
-| `include/containers/SmallVec.hpp` | Inline-capacity vector (`SmallVec<T, N>`) |
-| `include/containers/AtomicSharedPtr.hpp` | `AtomicSharedPtr<T>` (C++14 backport) |
-| `include/containers/SharedStr.hpp` | Ref-counted immutable string (`Arc<str>`) |
-| `include/containers/IndexMap.hpp` | Insertion-ordered hash map (`IndexMap<K, V>`) |
-| `include/containers/SlotMap.hpp` | Generation-tagged stable slots (`SlotMap<T>`) |
+| `include/containers/message/` | `Message.hpp` — COW message + message metadata |
+| `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cow.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `ViewPtr.hpp` |
+| `include/containers/collections/` | General-purpose containers: `Bytes.hpp`, `SmallVec.hpp`, `IndexMap.hpp`, `SlotMap.hpp` |
+| `include/containers/concurrency/` | Queues and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `AtomicSharedPtr.hpp` |
+| `include/containers/Config.hpp` | `CS_NODISCARD` feature shim shared by the headers |
 | `include/containers/bench/PerfEval.hpp` | Threshold-based performance evaluation harness |
-| `include/containers/ConcurrentQueue.hpp` | Blocking MPMC queue |
-| `include/containers/SpscQueue.hpp` | Lock-free SPSC ring queue |
-| `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via *Test.cpp) |
+| `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via `*Test.cpp`) |
 | `tests/` | Test runner (`gtest_main.cpp`) and the test-target CMake glue |
 | `benchmarks/registry/` | Google Benchmark suites for copy, COW detach, clone, queue transfer, Bytes, IndexMap, SlotMap, ... |
 | `benchmarks/perf/` | `containers_perf_eval`: targets, verdicts and a Markdown report |
@@ -195,10 +189,11 @@ googletest tree with `-DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=<googletest-src>`.
 ## Package
 
 `cmake --install build --prefix <dir>` installs
-`include/containers/*.hpp`, `lib/cmake/Containers/ContainersConfig.cmake` (which
-exports `Containers::containers`) and no third-party runtime dependency — the
-package is pure C++ headers, so a downstream `find_package(Containers CONFIG)`
-pulls nothing extra.
+`include/containers/**/*.hpp` (headers keep their group sub-directories),
+`lib/cmake/Containers/ContainersConfig.cmake` (which exports
+`Containers::containers`) and no third-party runtime dependency — the package is
+pure C++ headers, so a downstream `find_package(Containers CONFIG)` pulls nothing
+extra.
 
 ## License
 
