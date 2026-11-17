@@ -1,4 +1,4 @@
-#include <containers/AtomicSharedPtr.hpp>
+#include <containers/concurrency/AtomicSharedPtr.hpp>
 
 #include <gtest/gtest.h>
 

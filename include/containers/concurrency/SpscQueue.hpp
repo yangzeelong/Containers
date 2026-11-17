@@ -1,8 +1,8 @@
 #ifndef CONTAINERS_SPSC_QUEUE_HPP
 #define CONTAINERS_SPSC_QUEUE_HPP
 
-#include "containers/ConcurrentQueue.hpp"
-#include "containers/Optional.hpp"
+#include "containers/concurrency/ConcurrentQueue.hpp"
+#include "containers/stdx/Optional.hpp"
 
 #include <algorithm>
 #include <atomic>

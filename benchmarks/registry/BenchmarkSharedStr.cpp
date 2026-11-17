@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/SharedStr.hpp>
+#include <containers/stdx/SharedStr.hpp>
 
 #include <string>
 

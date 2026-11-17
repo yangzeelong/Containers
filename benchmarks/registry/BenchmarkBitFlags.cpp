@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/BitFlags.hpp>
+#include <containers/stdx/BitFlags.hpp>
 
 #include <cstdint>
 

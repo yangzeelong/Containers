@@ -1,4 +1,4 @@
-#include <containers/ScopedGuard.hpp>
+#include <containers/stdx/ScopedGuard.hpp>
 
 #include <gtest/gtest.h>
 

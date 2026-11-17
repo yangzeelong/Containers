@@ -1,4 +1,4 @@
-#include <containers/IndexMap.hpp>
+#include <containers/collections/IndexMap.hpp>
 
 #include <gtest/gtest.h>
 

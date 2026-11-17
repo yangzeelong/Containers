@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/IndexMap.hpp>
+#include <containers/collections/IndexMap.hpp>
 
 #include <unordered_map>
 

@@ -1,5 +1,5 @@
-#include "containers/Message.hpp"
-#include "containers/SpscQueue.hpp"
+#include "containers/message/Message.hpp"
+#include "containers/concurrency/SpscQueue.hpp"
 
 #include <benchmark/benchmark.h>
 

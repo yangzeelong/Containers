@@ -6,15 +6,16 @@
 
 ## 1. 这是什么项目
 
-**Containers（朋友们简称 cs）**：C++14 的**通用容器库**，纯 header-only 对外分发，
-供其他 C++14 项目按需引用（`find_package(Containers CONFIG)`）。组件覆盖三类：
+**Containers（朋友们简称 cs）**：C++14 的**通用容器库 + std 扩展**，纯 header-only
+对外分发，供其他 C++14 项目按需引用（`find_package(Containers CONFIG)`）。头文件按
+类别放在子目录，组件覆盖四组：
 
-- 消息与类型擦除：**Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝
-  语义）、`Any`、Rust 风格手工取位的 `Optional`、非拥有指针包装 `ViewPtr`。
-- 通用容器 / 工具：`Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`Bytes`/`BytesMut`、
-  `BitFlags`、`NonZero`、`SmallVec`、`AtomicSharedPtr`、`SharedStr`、`IndexMap`、
-  `SlotMap`、`ScopedGuard`。
-- 并发：阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者环形队列 `SpscQueue`。
+- `message/`：**Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝语义）。
+- `stdx/`：Rust 风格的基础类型与 std 扩展——`Any`、`Optional`、`ViewPtr`、`Result`、
+  `Unit`、`Cow`、`OnceCell`/`Lazy`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
+- `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`。
+- `concurrency/`：并发原语——阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者
+  环形队列 `SpscQueue`、`AtomicSharedPtr`。
 
 **它不依赖任何框架运行时**：没有 pipeline、没有消息执行、没有调度——每个组件都能
 独立使用，全部行为（拷贝、分离、进出队、阻塞、唤醒）可以在单测、CI、甚至没装任何
@@ -26,9 +27,10 @@
 
 | 路径 | 作用 |
 | --- | --- |
-| `include/containers/Message.hpp` | COW 消息容器 + 消息元数据 |
-| `include/containers/Any.hpp` `Optional.hpp` `ViewPtr.hpp` | 变体 / 可选 / 指针视图 |
-| `include/containers/ConcurrentQueue.hpp` `SpscQueue.hpp` | 阻塞队列 / 无锁 SPSC 环形队列 |
+| `include/containers/message/Message.hpp` | COW 消息容器 + 消息元数据 |
+| `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、Result、Unit、Cow、OnceCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
+| `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap） |
+| `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、AtomicSharedPtr） |
 | `src/*Test.cpp` | colocated 单测（自动编译进 `containers_tests`） |
 | `benchmarks/registry/` | Google Benchmark：拷贝、COW 分离、Clone、队列传送、Bytes/IndexMap/SlotMap 等 |
 | `benchmarks/perf/` | `containers_perf_eval`：目标阈值判定 + Markdown 报告 |
@@ -40,22 +42,22 @@
 
 | 想改的东西 | 文件 |
 | --- | --- |
-| Message 模型 / COW 行为 | `include/containers/Message.hpp` |
-| Any / Optional / ViewPtr | `include/containers/Any.hpp` 等三个头 |
-| Result / Unit / Config（Rust 风格） | `include/containers/Result.hpp`、`Unit.hpp`、`Config.hpp` |
-| ScopedGuard / OnScopeExit | `include/containers/ScopedGuard.hpp` |
-| Cow（Borrowed/Owned） | `include/containers/Cow.hpp` |
-| OnceCell / Lazy | `include/containers/OnceCell.hpp` |
-| Bytes / BytesMut | `include/containers/Bytes.hpp` |
-| BitFlags | `include/containers/BitFlags.hpp` |
-| NonZero | `include/containers/NonZero.hpp` |
-| SmallVec | `include/containers/SmallVec.hpp` |
-| AtomicSharedPtr | `include/containers/AtomicSharedPtr.hpp` |
-| SharedStr | `include/containers/SharedStr.hpp` |
-| IndexMap | `include/containers/IndexMap.hpp` |
-| SlotMap | `include/containers/SlotMap.hpp` |
+| Message 模型 / COW 行为 | `include/containers/message/Message.hpp` |
+| Any / Optional / ViewPtr | `include/containers/stdx/Any.hpp`、`include/containers/stdx/Optional.hpp`、`include/containers/stdx/ViewPtr.hpp` |
+| Result / Unit / Config（Rust 风格） | `include/containers/stdx/Result.hpp`、`include/containers/stdx/Unit.hpp`、`include/containers/Config.hpp` |
+| ScopedGuard / OnScopeExit | `include/containers/stdx/ScopedGuard.hpp` |
+| Cow（Borrowed/Owned） | `include/containers/stdx/Cow.hpp` |
+| OnceCell / Lazy | `include/containers/stdx/OnceCell.hpp` |
+| Bytes / BytesMut | `include/containers/collections/Bytes.hpp` |
+| BitFlags | `include/containers/stdx/BitFlags.hpp` |
+| NonZero | `include/containers/stdx/NonZero.hpp` |
+| SmallVec | `include/containers/collections/SmallVec.hpp` |
+| AtomicSharedPtr | `include/containers/concurrency/AtomicSharedPtr.hpp` |
+| SharedStr | `include/containers/stdx/SharedStr.hpp` |
+| IndexMap | `include/containers/collections/IndexMap.hpp` |
+| SlotMap | `include/containers/collections/SlotMap.hpp` |
 | 性能评估框架 | `include/containers/bench/PerfEval.hpp` + `benchmarks/perf/PerfEvaluatorMain.cpp` |
-| 并发队列 / 无锁 SPSC 环形队列 | `include/containers/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
+| 并发队列 / 无锁 SPSC 环形队列 | `include/containers/concurrency/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
 | 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
 | 单测 | `src/*Test.cpp`（任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
 | 基准 | `benchmarks/**/Benchmark*.cpp` |
@@ -88,7 +90,7 @@ cmake --build build --parallel 16
 ### 安装 / 包导出
 
 `cmake --install build --prefix <dir>` 必须产出
-`include/containers/*.hpp`、`lib/cmake/Containers/ContainersConfig.cmake`：它由
+`include/containers/**/*.hpp`（保留分组子目录）、`lib/cmake/Containers/ContainersConfig.cmake`：它由
 `cmake/ContainersConfig.cmake.in` 加根 `CMakeLists.txt` 末尾的
 `install(EXPORT containersTargets ...)` 生成，导出 `Containers::containers`。
 **没有任何第三方运行时依赖**（纯 C++ 头）。**这条路径有验收工程**：

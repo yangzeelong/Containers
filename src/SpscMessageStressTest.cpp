@@ -1,5 +1,5 @@
-#include "containers/SpscQueue.hpp"
-#include "containers/Message.hpp"
+#include "containers/concurrency/SpscQueue.hpp"
+#include "containers/message/Message.hpp"
 
 #include <gtest/gtest.h>
 

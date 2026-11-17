@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <containers/SlotMap.hpp>
+#include <containers/collections/SlotMap.hpp>
 
 #include <vector>
 
