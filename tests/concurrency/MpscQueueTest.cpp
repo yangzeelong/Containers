@@ -80,7 +80,7 @@ TEST(MpscQueueTest, MultiProducerSingleConsumer) {
     MpscQueue<int> queue(1024);
     std::vector<std::thread> producers;
     for (int producer = 0; producer < producerCount; ++producer) {
-        producers.emplace_back([&queue, producer] {
+        producers.emplace_back([&queue, producer, perProducer] {
             for (int index = 0; index < perProducer; ++index) {
                 EXPECT_TRUE(queue.push(producer * 100000 + index));
             }
