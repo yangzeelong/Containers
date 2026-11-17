@@ -38,10 +38,15 @@ endif()
 include("cmake/include.cmake")
 include("cmake/Utils.cmake")
 
-# Library sources living next to their own *Test.cpp get appended here.
-set_property(GLOBAL PROPERTY GLOBAL_TEST_SOURCES "")
+# The library is header-only: one INTERFACE target carries the include directory
+# and nothing else to build; tests and benchmarks link against it.
+include(GNUInstallDirs)
 
-add_subdirectory(src)
+add_library(containers INTERFACE)
+target_include_directories(containers INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 if(WITH_TESTING)
     enable_testing()
@@ -61,6 +66,11 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 set(CONTAINERS_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Containers)
+
+install(TARGETS containers EXPORT containersTargets)
+
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/containers
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 install(EXPORT containersTargets
     FILE ContainersTargets.cmake

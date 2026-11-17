@@ -117,9 +117,8 @@ override.
 | `include/containers/concurrency/` | Queues and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `AtomicSharedPtr.hpp` |
 | `include/containers/Config.hpp` | `CS_NODISCARD` feature shim shared by the headers |
 | `include/containers/bench/PerfEval.hpp` | Threshold-based performance evaluation harness |
-| `src/*Test.cpp` | GoogleTest cases colocated in src (auto-discovered via `*Test.cpp`) |
-| `tests/` | Test runner (`gtest_main.cpp`) and the test-target CMake glue |
-| `benchmarks/registry/` | Google Benchmark suites for copy, COW detach, clone, queue transfer, Bytes, IndexMap, SlotMap, ... |
+| `tests/` | GoogleTest sources grouped by component (`message/`, `stdx/`, `collections/`, `concurrency/`, `bench/`) + `gtest_main.cpp` runner |
+| `benchmarks/` | `benchmark_main.cpp` + Google Benchmark suites grouped by component (`message/`, `stdx/`, `collections/`, `concurrency/`) |
 | `benchmarks/perf/` | `containers_perf_eval`: targets, verdicts and a Markdown report |
 | `examples/consumer/` | Standalone downstream project: `find_package(Containers CONFIG)` + install prefix |
 | `cmake/` | `include.cmake`, `Utils.cmake`, `Summary.cmake`, `3rdparty/*.cmake`, `ContainersConfig.cmake.in` |
@@ -139,8 +138,8 @@ Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
 `NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`,
 `IndexMapTest`, `SlotMapTest`, `MessageBytesTest`, `PerfEvalTest`. Test sources
-are found by suffix: any `*Test.cpp` is compiled into `containers_tests`, so a
-test file dropped next to its header is picked up automatically.
+are found by suffix: any `*Test.cpp` under `tests/` is compiled into
+`containers_tests`, so a new test file is picked up automatically.
 
 Locally measured (Clang 19.1.5, Release, `--benchmark_min_time=0.05s`, 28 cores;
 treat as a baseline, not a contract):
