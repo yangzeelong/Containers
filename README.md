@@ -53,6 +53,10 @@ is included individually.
     `std::borrow::Cow`.
 *   **Lazy initialization** — `OnceCell<T>` initializes at most once through a
     factory (thread-safe `std::call_once`), `Lazy<T>` wraps it behind `*`/`->`.
+*   **Interior mutability** — `Cell<T>` hands out copies and can be updated through
+    a const reference, while `RefCell<T>` adds Rust-style runtime borrow checking:
+    many shared borrows or one mutable borrow at a time, with throwing `borrow()` /
+    `borrowMut()` and non-throwing `tryBorrow()` / `tryBorrowMut()` variants.
 *   **Typed bit flags** — `BitFlags<Enum>` wraps an enum's bit pattern with
     `contains` / `insert` / `remove` and `|`, `&`, `^`, `~` operators.
 *   **Non-zero integers** — `NonZero<T>` encodes the "never zero" invariant;
@@ -112,7 +116,7 @@ override.
 | Path | Contents |
 | --- | --- |
 | `include/containers/message/` | `Message.hpp` — COW message + message metadata |
-| `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cow.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `ViewPtr.hpp` |
+| `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cell.hpp`, `Cow.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `ViewPtr.hpp` |
 | `include/containers/collections/` | General-purpose containers: `Bytes.hpp`, `SmallVec.hpp`, `IndexMap.hpp`, `SlotMap.hpp` |
 | `include/containers/concurrency/` | Queues and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `AtomicSharedPtr.hpp` |
 | `include/containers/Config.hpp` | `CS_NODISCARD` feature shim shared by the headers |
