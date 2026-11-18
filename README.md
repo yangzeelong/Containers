@@ -94,6 +94,11 @@ is included individually.
     capacity transparently falls back to `ConcurrentQueue`.
 *   **Atomic shared_ptr** — `AtomicSharedPtr<T>` is a C++14 stand-in for C++20's
     `std::atomic<std::shared_ptr<T>>` (mutex-based load/store/exchange/CAS).
+*   **Bounded lock-free MPSC queue** — `MpscQueue<T>` is a multi-producer /
+    single-consumer ring buffer: producers reserve slots through a CAS and publish
+    with a release sequence word, the consumer recycles them. `waitAndPop()` parks
+    the consumer on a condition variable that producers only touch when it is
+    idle, and `close()` wakes a blocked consumer and rejects new pushes.
 *   **Join-on-destroy threads** — `Thread` is a move-only RAII wrapper around
     `std::thread` that joins in its destructor instead of terminating the process;
     `ScopedThread` is the non-movable, non-detachable variant for structured

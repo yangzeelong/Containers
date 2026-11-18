@@ -151,7 +151,7 @@ ctest --test-dir build --output-on-failure
 ```
 
 - 当前 suite：`MessageTest`、`MessageMetaTest`、`AnyTest`、`OptionalThrowingTest`、
-  `ConcurrentQueueTest`、`SpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
+  `ConcurrentQueueTest`、`SpscQueueTest`、`MpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
   双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`、
   `OnceCellTest`、`CellTest`、`RefCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
   `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`ThreadTest`、`ScopedThreadTest`、`SharedStrTest`、
