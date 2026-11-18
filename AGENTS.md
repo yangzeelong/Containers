@@ -48,6 +48,7 @@
 | ScopedGuard / OnScopeExit | `include/containers/stdx/ScopedGuard.hpp` |
 | Cow（Borrowed/Owned） | `include/containers/stdx/Cow.hpp` |
 | OnceCell / Lazy | `include/containers/stdx/OnceCell.hpp` |
+| Cell / RefCell（内部可变性） | `include/containers/stdx/Cell.hpp` |
 | Bytes / BytesMut | `include/containers/collections/Bytes.hpp` |
 | BitFlags | `include/containers/stdx/BitFlags.hpp` |
 | NonZero | `include/containers/stdx/NonZero.hpp` |
@@ -150,7 +151,7 @@ ctest --test-dir build --output-on-failure
 - 当前 suite：`MessageTest`、`MessageMetaTest`、`AnyTest`、`OptionalThrowingTest`、
   `ConcurrentQueueTest`、`SpscQueueTest`、`SpscMessageStress`（含 20 万消息 SPSC
   双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`、
-  `OnceCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
+  `OnceCellTest`、`CellTest`、`RefCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
   `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`SharedStrTest`、
   `IndexMapTest`、`SlotMapTest`、`StringViewTest`、`MessageBytesTest`、`PerfEvalTest`。
 - 改头（解析、COW、队列、唤醒）**必须**跑测试；不要为了变绿去改测试语义，

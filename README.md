@@ -57,6 +57,10 @@ is included individually.
     `std::borrow::Cow`.
 *   **Lazy initialization** — `OnceCell<T>` initializes at most once through a
     factory (thread-safe `std::call_once`), `Lazy<T>` wraps it behind `*`/`->`.
+*   **Interior mutability** — `Cell<T>` hands out copies and can be updated through
+    a const reference, while `RefCell<T>` adds Rust-style runtime borrow checking:
+    many shared borrows or one mutable borrow at a time, with throwing `borrow()` /
+    `borrowMut()` and non-throwing `tryBorrow()` / `tryBorrowMut()` variants.
 *   **Typed bit flags** — `BitFlags<Enum>` wraps an enum's bit pattern with
     `contains` / `insert` / `remove` and `|`, `&`, `^`, `~` operators.
 *   **Non-zero integers** — `NonZero<T>` encodes the "never zero" invariant;
