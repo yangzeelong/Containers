@@ -174,7 +174,9 @@ ctest --test-dir build --output-on-failure
   `benchmarks/perf/PerfEvaluatorMain.cpp` 注册，目标可以是同一次 run 内的参照用例
   （机器无关，例 `0.737x vector_reserved_push`）或绝对 ns/op 上限；
   `--tolerance` 给默认容差，超标退出码 1，`--no-check` 只出报告。`ctest` 跑一条
-  `--no-check` 短冒烟，保证框架本身不腐化。
+  `--no-check` 短冒烟，保证框架本身不腐化。新组件也注册了用例：
+  `stringview_compare_1k`、`bitset_count_64k`、`mpscqueue_push_pop_256`、
+  `cell_get_set`、`refcell_borrow_mut`。
 - 本地实测（Clang 19.1.5 Release）：`ctest` 3/3 通过——`containers_tests` 1.9s
   （31 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 76s。基准数字
   基线（16/2048 元素）：`BM_MessageCopy` 0.011/0.011 us、`BM_MessageConstruction`

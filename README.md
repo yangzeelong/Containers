@@ -197,6 +197,10 @@ Google Benchmark answers "how fast is this case". The evaluation runner answers
   it. Exit code is `1` when a case misses its target; `--no-check` downgrades the
   run to report-only. `--list` prints the registered cases.
 - `ctest` runs a short `--no-check` pass so the runner itself cannot rot.
+- The registered gates cover the newer components as well: `stringview_compare_1k`
+  (vs `std::string`), `bitset_count_64k` (vs `std::vector<bool>`),
+  `mpscqueue_push_pop_256` (vs `ConcurrentQueue`) and absolute budgets for
+  `cell_get_set` / `refcell_borrow_mut`.
 
 Adding a case is one call in `benchmarks/perf/PerfEvaluatorMain.cpp`:
 `evaluator.AddCase("name", body, {baselineNs, "reference", tolerancePercent})`.
