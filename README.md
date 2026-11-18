@@ -134,7 +134,7 @@ override.
 | `include/containers/message/` | `Message.hpp` — COW message + message metadata |
 | `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cow.hpp`, `Cell.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `StringView.hpp`, `ViewPtr.hpp` |
 | `include/containers/collections/` | General-purpose containers: `Bytes.hpp`, `SmallVec.hpp`, `IndexMap.hpp`, `SlotMap.hpp`, `BitSet.hpp` |
-| `include/containers/concurrency/` | Queues, threads and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `AtomicSharedPtr.hpp`, `Thread.hpp` |
+| `include/containers/concurrency/` | Queues, threads and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `MpscQueue.hpp`, `AtomicSharedPtr.hpp`, `Thread.hpp` |
 | `include/containers/Config.hpp` | `CS_NODISCARD` feature shim shared by the headers |
 | `include/containers/bench/PerfEval.hpp` | Threshold-based performance evaluation harness |
 | `tests/` | GoogleTest sources grouped by component (`message/`, `stdx/`, `collections/`, `concurrency/`, `bench/`) + `gtest_main.cpp` runner |
@@ -153,7 +153,7 @@ ctest --test-dir build --output-on-failure                            # 3 tests:
 ```
 
 Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
-`OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
+`OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`, `MpscQueueTest`,
 `SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
 `OnceCellTest`, `CellTest`, `RefCellTest`, `LazyTest`, `BytesTest`,
 `BytesMutTest`, `BitFlagsTest`, `NonZeroTest`, `SmallVecTest`,

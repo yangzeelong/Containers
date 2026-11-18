@@ -26,19 +26,19 @@ public:
 
     static constexpr size_type kInlineCapacity = InlineCapacity;
 
-    SmallVec() noexcept : size_(0), heapMode_(false) {}
+    SmallVec() noexcept : m_size(0), m_heapMode(false) {}
 
-    SmallVec(const SmallVec& other) : size_(0), heapMode_(false) { copyFrom(other); }
+    SmallVec(const SmallVec& other) : m_size(0), m_heapMode(false) { copyFrom(other); }
 
-    SmallVec(SmallVec&& other) : size_(0), heapMode_(false) { moveFrom(std::move(other)); }
+    SmallVec(SmallVec&& other) : m_size(0), m_heapMode(false) { moveFrom(std::move(other)); }
 
     ~SmallVec() { clear(); }
 
     SmallVec& operator=(const SmallVec& other) {
         if (this != &other) {
             clear();
-            heap_.clear();
-            heapMode_ = false;
+            m_heap.clear();
+            m_heapMode = false;
             copyFrom(other);
         }
         return *this;
@@ -47,70 +47,70 @@ public:
     SmallVec& operator=(SmallVec&& other) {
         if (this != &other) {
             clear();
-            heap_.clear();
-            heapMode_ = false;
+            m_heap.clear();
+            m_heapMode = false;
             moveFrom(std::move(other));
         }
         return *this;
     }
 
-    size_type size() const noexcept { return size_; }
-    bool empty() const noexcept { return size_ == 0; }
-    size_type capacity() const noexcept { return heapMode_ ? heap_.capacity() : InlineCapacity; }
-    bool isInline() const noexcept { return !heapMode_; }
+    size_type size() const noexcept { return m_size; }
+    bool empty() const noexcept { return m_size == 0; }
+    size_type capacity() const noexcept { return m_heapMode ? m_heap.capacity() : InlineCapacity; }
+    bool isInline() const noexcept { return !m_heapMode; }
 
-    T* data() noexcept { return heapMode_ ? heap_.data() : inlinePtr(); }
+    T* data() noexcept { return m_heapMode ? m_heap.data() : inlinePtr(); }
     const T* data() const noexcept {
-        return heapMode_ ? heap_.data() : reinterpret_cast<const T*>(inline_);
+        return m_heapMode ? m_heap.data() : reinterpret_cast<const T*>(m_inline);
     }
 
     iterator begin() noexcept { return data(); }
-    iterator end() noexcept { return data() + size_; }
+    iterator end() noexcept { return data() + m_size; }
     const_iterator begin() const noexcept { return data(); }
-    const_iterator end() const noexcept { return data() + size_; }
+    const_iterator end() const noexcept { return data() + m_size; }
 
     T& operator[](size_type index) noexcept { return data()[index]; }
     const T& operator[](size_type index) const noexcept { return data()[index]; }
 
     T& front() noexcept { return data()[0]; }
     const T& front() const noexcept { return data()[0]; }
-    T& back() noexcept { return data()[size_ - 1]; }
-    const T& back() const noexcept { return data()[size_ - 1]; }
+    T& back() noexcept { return data()[m_size - 1]; }
+    const T& back() const noexcept { return data()[m_size - 1]; }
 
     template <typename... Args>
     T& emplace_back(Args&&... args) {
-        if (!heapMode_ && size_ == InlineCapacity) {
+        if (!m_heapMode && m_size == InlineCapacity) {
             promote();
         }
-        if (heapMode_) {
-            heap_.emplace_back(std::forward<Args>(args)...);
-            size_ = heap_.size();
-            return heap_.back();
+        if (m_heapMode) {
+            m_heap.emplace_back(std::forward<Args>(args)...);
+            m_size = m_heap.size();
+            return m_heap.back();
         }
-        new (inlinePtr() + size_) T(std::forward<Args>(args)...);
-        ++size_;
-        return inlinePtr()[size_ - 1];
+        new (inlinePtr() + m_size) T(std::forward<Args>(args)...);
+        ++m_size;
+        return inlinePtr()[m_size - 1];
     }
 
     void push_back(const T& value) { emplace_back(value); }
     void push_back(T&& value) { emplace_back(std::move(value)); }
 
     void pop_back() {
-        if (heapMode_) {
-            heap_.pop_back();
-            size_ = heap_.size();
+        if (m_heapMode) {
+            m_heap.pop_back();
+            m_size = m_heap.size();
         } else {
-            inlinePtr()[--size_].~T();
+            inlinePtr()[--m_size].~T();
         }
     }
 
     void clear() noexcept {
-        if (heapMode_) {
-            heap_.clear();
-            size_ = 0;
+        if (m_heapMode) {
+            m_heap.clear();
+            m_size = 0;
         } else {
-            while (size_ > 0) {
-                inlinePtr()[--size_].~T();
+            while (m_size > 0) {
+                inlinePtr()[--m_size].~T();
             }
         }
     }
@@ -119,61 +119,61 @@ public:
         if (capacity <= InlineCapacity) {
             return;
         }
-        if (!heapMode_) {
+        if (!m_heapMode) {
             promote();
         }
-        heap_.reserve(capacity);
+        m_heap.reserve(capacity);
     }
 
 private:
-    T* inlinePtr() noexcept { return reinterpret_cast<T*>(inline_); }
-    const T* inlinePtr() const noexcept { return reinterpret_cast<const T*>(inline_); }
+    T* inlinePtr() noexcept { return reinterpret_cast<T*>(m_inline); }
+    const T* inlinePtr() const noexcept { return reinterpret_cast<const T*>(m_inline); }
 
     void promote() {
-        heap_.reserve(InlineCapacity * 2);
-        for (size_type index = 0; index < size_; ++index) {
-            heap_.push_back(std::move(inlinePtr()[index]));
+        m_heap.reserve(InlineCapacity * 2);
+        for (size_type index = 0; index < m_size; ++index) {
+            m_heap.push_back(std::move(inlinePtr()[index]));
             inlinePtr()[index].~T();
         }
-        heapMode_ = true;
+        m_heapMode = true;
     }
 
     void copyFrom(const SmallVec& other) {
-        if (other.heapMode_) {
-            heap_ = other.heap_;
-            heapMode_ = true;
-            size_ = heap_.size();
+        if (other.m_heapMode) {
+            m_heap = other.m_heap;
+            m_heapMode = true;
+            m_size = m_heap.size();
         } else {
-            for (size_type index = 0; index < other.size_; ++index) {
+            for (size_type index = 0; index < other.m_size; ++index) {
                 new (inlinePtr() + index) T(other.inlinePtr()[index]);
             }
-            size_ = other.size_;
-            heapMode_ = false;
+            m_size = other.m_size;
+            m_heapMode = false;
         }
     }
 
     void moveFrom(SmallVec&& other) {
-        if (other.heapMode_) {
-            heap_ = std::move(other.heap_);
-            heapMode_ = true;
-            size_ = other.size_;
-            other.size_ = 0;
-            other.heapMode_ = false;
-            other.heap_.clear();
+        if (other.m_heapMode) {
+            m_heap = std::move(other.m_heap);
+            m_heapMode = true;
+            m_size = other.m_size;
+            other.m_size = 0;
+            other.m_heapMode = false;
+            other.m_heap.clear();
         } else {
-            for (size_type index = 0; index < other.size_; ++index) {
+            for (size_type index = 0; index < other.m_size; ++index) {
                 new (inlinePtr() + index) T(std::move(other.inlinePtr()[index]));
             }
-            size_ = other.size_;
-            other.size_ = 0;
-            heapMode_ = false;
+            m_size = other.m_size;
+            other.m_size = 0;
+            m_heapMode = false;
         }
     }
 
-    typename std::aligned_storage<sizeof(T), alignof(T)>::type inline_[InlineCapacity];
-    std::vector<T> heap_;
-    size_type size_;
-    bool heapMode_;
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type m_inline[InlineCapacity];
+    std::vector<T> m_heap;
+    size_type m_size;
+    bool m_heapMode;
 };
 
 } // namespace containers

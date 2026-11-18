@@ -117,15 +117,15 @@ struct PerfResult {
 class PerfEvaluator {
 public:
     explicit PerfEvaluator(double defaultTolerancePercent = 10.0)
-        : defaultTolerance_(defaultTolerancePercent > 0.0 ? defaultTolerancePercent : 0.0) {}
+        : m_defaultTolerance(defaultTolerancePercent > 0.0 ? defaultTolerancePercent : 0.0) {}
 
     void AddCase(std::string name, std::function<void()> body, PerfOptions options = PerfOptions()) {
         assert(!name.empty());
         assert(static_cast<bool>(body));
-        cases_.push_back(PerfCase{std::move(name), std::move(body), std::move(options)});
+        m_cases.push_back(PerfCase{std::move(name), std::move(body), std::move(options)});
     }
 
-    const std::vector<PerfCase>& Cases() const noexcept { return cases_; }
+    const std::vector<PerfCase>& Cases() const noexcept { return m_cases; }
 
     // Runs every case: `warmup` untimed rounds, then `rounds` timed rounds of
     // `iterations` calls each. The sample for a round is the mean ns/op.
@@ -135,9 +135,9 @@ public:
         assert(iterations > 0);
 
         std::vector<PerfResult> results;
-        results.reserve(cases_.size());
+        results.reserve(m_cases.size());
 
-        for (const PerfCase& current : cases_) {
+        for (const PerfCase& current : m_cases) {
             for (std::size_t warm = 0; warm < warmup; ++warm) {
                 for (std::size_t index = 0; index < iterations; ++index) {
                     current.body();
@@ -158,7 +158,7 @@ public:
             result.hasReference = !current.options.reference.empty();
             result.reference = current.options.reference;
             result.tolerancePercent =
-                current.options.tolerancePercent > 0.0 ? current.options.tolerancePercent : defaultTolerance_;
+                current.options.tolerancePercent > 0.0 ? current.options.tolerancePercent : m_defaultTolerance;
             results.push_back(std::move(result));
         }
 
@@ -259,8 +259,8 @@ private:
         return text.str();
     }
 
-    double defaultTolerance_;
-    std::vector<PerfCase> cases_;
+    double m_defaultTolerance;
+    std::vector<PerfCase> m_cases;
 };
 
 // Keeps a computed address observable so trivial bodies are not optimized away.

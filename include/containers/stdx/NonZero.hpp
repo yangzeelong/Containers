@@ -22,7 +22,7 @@ public:
 
     NonZero() = delete;
 
-    explicit NonZero(T value) : value_(value) {
+    explicit NonZero(T value) : m_value(value) {
         assert(value != T());
     }
 
@@ -33,15 +33,15 @@ public:
         return NonZero(value);
     }
 
-    T get() const noexcept { return value_; }
-    explicit operator T() const noexcept { return value_; }
+    T get() const noexcept { return m_value; }
+    explicit operator T() const noexcept { return m_value; }
 
-    bool operator==(NonZero other) const noexcept { return value_ == other.value_; }
-    bool operator!=(NonZero other) const noexcept { return value_ != other.value_; }
-    bool operator<(NonZero other) const noexcept { return value_ < other.value_; }
+    bool operator==(NonZero other) const noexcept { return m_value == other.m_value; }
+    bool operator!=(NonZero other) const noexcept { return m_value != other.m_value; }
+    bool operator<(NonZero other) const noexcept { return m_value < other.m_value; }
 
 private:
-    T value_;
+    T m_value;
 };
 
 using NonZeroU32 = NonZero<std::uint32_t>;

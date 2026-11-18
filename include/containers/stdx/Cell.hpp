@@ -20,33 +20,33 @@ class Cell {
                   "Cell<T> requires a copy-constructible T");
 
 public:
-    Cell() : value_() {}
+    Cell() : m_value() {}
 
-    explicit Cell(const T& value) : value_(value) {}
+    explicit Cell(const T& value) : m_value(value) {}
 
     Cell(const Cell&) = default;
     Cell& operator=(const Cell&) = default;
 
-    T get() const { return value_; }
+    T get() const { return m_value; }
 
-    void set(const T& value) const { value_ = value; }
+    void set(const T& value) const { m_value = value; }
 
     T replace(const T& value) const {
-        T old = value_;
-        value_ = value;
+        T old = m_value;
+        m_value = value;
         return old;
     }
 
     T take() const {
         static_assert(std::is_default_constructible<T>::value,
                       "Cell<T>::take() requires a default-constructible T");
-        T old = std::move(value_);
-        value_ = T();
+        T old = std::move(m_value);
+        m_value = T();
         return old;
     }
 
 private:
-    mutable T value_;
+    mutable T m_value;
 };
 
 // Rust's `std::cell::RefCell`: interior mutability with runtime borrow
@@ -61,7 +61,7 @@ public:
     class Ref;
     class RefMut;
 
-    explicit RefCell(T value) : value_(std::move(value)) {}
+    explicit RefCell(T value) : m_value(std::move(value)) {}
 
     RefCell(const RefCell&) = delete;
     RefCell& operator=(const RefCell&) = delete;
@@ -71,10 +71,10 @@ public:
     ~RefCell() { assert(!isBorrowed()); }
 
     Ref borrow() const {
-        if (mutablyBorrowed_) {
+        if (m_mutablyBorrowed) {
             throw std::logic_error("RefCell: value is already mutably borrowed");
         }
-        ++sharedBorrows_;
+        ++m_sharedBorrows;
         return Ref(*this);
     }
 
@@ -82,15 +82,15 @@ public:
         if (isBorrowed()) {
             throw std::logic_error("RefCell: value is already borrowed");
         }
-        mutablyBorrowed_ = true;
+        m_mutablyBorrowed = true;
         return RefMut(*this);
     }
 
     Optional<Ref> tryBorrow() const {
-        if (mutablyBorrowed_) {
+        if (m_mutablyBorrowed) {
             return nullOpt;
         }
-        ++sharedBorrows_;
+        ++m_sharedBorrows;
         return Optional<Ref>(Ref(*this));
     }
 
@@ -98,45 +98,45 @@ public:
         if (isBorrowed()) {
             return nullOpt;
         }
-        mutablyBorrowed_ = true;
+        m_mutablyBorrowed = true;
         return Optional<RefMut>(RefMut(*this));
     }
 
-    bool isBorrowed() const noexcept { return sharedBorrows_ != 0 || mutablyBorrowed_; }
+    bool isBorrowed() const noexcept { return m_sharedBorrows != 0 || m_mutablyBorrowed; }
 
-    bool isMutablyBorrowed() const noexcept { return mutablyBorrowed_; }
+    bool isMutablyBorrowed() const noexcept { return m_mutablyBorrowed; }
 
-    std::size_t sharedBorrowCount() const noexcept { return sharedBorrows_; }
+    std::size_t sharedBorrowCount() const noexcept { return m_sharedBorrows; }
 
 private:
     friend class Ref;
     friend class RefMut;
 
     void releaseShared() const noexcept {
-        assert(sharedBorrows_ > 0);
-        --sharedBorrows_;
+        assert(m_sharedBorrows > 0);
+        --m_sharedBorrows;
     }
 
     void releaseMutable() noexcept {
-        assert(mutablyBorrowed_);
-        mutablyBorrowed_ = false;
+        assert(m_mutablyBorrowed);
+        m_mutablyBorrowed = false;
     }
 
-    mutable T value_;
-    mutable std::size_t sharedBorrows_ = 0;
-    mutable bool mutablyBorrowed_ = false;
+    mutable T m_value;
+    mutable std::size_t m_sharedBorrows = 0;
+    mutable bool m_mutablyBorrowed = false;
 };
 
 template <typename T>
 class RefCell<T>::Ref {
 public:
-    Ref(Ref&& other) noexcept : owner_(other.owner_) { other.owner_ = nullptr; }
+    Ref(Ref&& other) noexcept : m_owner(other.m_owner) { other.m_owner = nullptr; }
 
     Ref& operator=(Ref&& other) noexcept {
         if (this != &other) {
             release();
-            owner_ = other.owner_;
-            other.owner_ = nullptr;
+            m_owner = other.m_owner;
+            other.m_owner = nullptr;
         }
         return *this;
     }
@@ -147,8 +147,8 @@ public:
     ~Ref() { release(); }
 
     const T& get() const {
-        assert(owner_ != nullptr);
-        return owner_->value_;
+        assert(m_owner != nullptr);
+        return m_owner->m_value;
     }
 
     const T& operator*() const { return get(); }
@@ -159,28 +159,28 @@ private:
     friend class RefCell;
     friend class RefCell<T>;
 
-    explicit Ref(const RefCell<T>& owner) noexcept : owner_(&owner) {}
+    explicit Ref(const RefCell<T>& owner) noexcept : m_owner(&owner) {}
 
     void release() noexcept {
-        if (owner_ != nullptr) {
-            owner_->releaseShared();
-            owner_ = nullptr;
+        if (m_owner != nullptr) {
+            m_owner->releaseShared();
+            m_owner = nullptr;
         }
     }
 
-    const RefCell<T>* owner_;
+    const RefCell<T>* m_owner;
 };
 
 template <typename T>
 class RefCell<T>::RefMut {
 public:
-    RefMut(RefMut&& other) noexcept : owner_(other.owner_) { other.owner_ = nullptr; }
+    RefMut(RefMut&& other) noexcept : m_owner(other.m_owner) { other.m_owner = nullptr; }
 
     RefMut& operator=(RefMut&& other) noexcept {
         if (this != &other) {
             release();
-            owner_ = other.owner_;
-            other.owner_ = nullptr;
+            m_owner = other.m_owner;
+            other.m_owner = nullptr;
         }
         return *this;
     }
@@ -191,8 +191,8 @@ public:
     ~RefMut() { release(); }
 
     T& get() const {
-        assert(owner_ != nullptr);
-        return owner_->value_;
+        assert(m_owner != nullptr);
+        return m_owner->m_value;
     }
 
     T& operator*() const { return get(); }
@@ -203,16 +203,16 @@ private:
     friend class RefCell;
     friend class RefCell<T>;
 
-    explicit RefMut(RefCell<T>& owner) noexcept : owner_(&owner) {}
+    explicit RefMut(RefCell<T>& owner) noexcept : m_owner(&owner) {}
 
     void release() noexcept {
-        if (owner_ != nullptr) {
-            owner_->releaseMutable();
-            owner_ = nullptr;
+        if (m_owner != nullptr) {
+            m_owner->releaseMutable();
+            m_owner = nullptr;
         }
     }
 
-    RefCell<T>* owner_;
+    RefCell<T>* m_owner;
 };
 
 }  // namespace containers

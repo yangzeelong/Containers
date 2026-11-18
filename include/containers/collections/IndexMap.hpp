@@ -29,44 +29,44 @@ public:
 
     IndexMap() = default;
 
-    size_type size() const noexcept { return storage_.size(); }
-    bool empty() const noexcept { return storage_.empty(); }
+    size_type size() const noexcept { return m_storage.size(); }
+    bool empty() const noexcept { return m_storage.empty(); }
 
     void reserve(size_type capacity) {
-        storage_.reserve(capacity);
-        index_.reserve(capacity);
+        m_storage.reserve(capacity);
+        m_index.reserve(capacity);
     }
 
     // Returns true when the key was new, false when an existing value was
     // replaced (the original position is kept, like IndexMap::insert).
     bool insert(K key, V value) {
-        auto found = index_.find(key);
-        if (found != index_.end()) {
-            storage_[found->second].second = std::move(value);
+        auto found = m_index.find(key);
+        if (found != m_index.end()) {
+            m_storage[found->second].second = std::move(value);
             return false;
         }
-        storage_.emplace_back(std::move(key), std::move(value));
-        index_.emplace(storage_.back().first, storage_.size() - 1);
+        m_storage.emplace_back(std::move(key), std::move(value));
+        m_index.emplace(m_storage.back().first, m_storage.size() - 1);
         return true;
     }
 
     V* find(const K& key) {
-        auto found = index_.find(key);
-        if (found == index_.end()) {
+        auto found = m_index.find(key);
+        if (found == m_index.end()) {
             return nullptr;
         }
-        return &storage_[found->second].second;
+        return &m_storage[found->second].second;
     }
 
     const V* find(const K& key) const {
-        auto found = index_.find(key);
-        if (found == index_.end()) {
+        auto found = m_index.find(key);
+        if (found == m_index.end()) {
             return nullptr;
         }
-        return &storage_[found->second].second;
+        return &m_storage[found->second].second;
     }
 
-    bool contains(const K& key) const { return index_.find(key) != index_.end(); }
+    bool contains(const K& key) const { return m_index.find(key) != m_index.end(); }
 
     V& at(const K& key) {
         V* value = find(key);
@@ -83,25 +83,25 @@ public:
     // Inserts V{} when the key is absent, like a std::map::operator[] (but keeps
     // insertion order). Requires K to be copyable and V default constructible.
     V& operator[](const K& key) {
-        auto found = index_.find(key);
-        if (found != index_.end()) {
-            return storage_[found->second].second;
+        auto found = m_index.find(key);
+        if (found != m_index.end()) {
+            return m_storage[found->second].second;
         }
-        storage_.emplace_back(key, V());
-        index_.emplace(storage_.back().first, storage_.size() - 1);
-        return storage_.back().second;
+        m_storage.emplace_back(key, V());
+        m_index.emplace(m_storage.back().first, m_storage.size() - 1);
+        return m_storage.back().second;
     }
 
     // O(n): removes the entry and shifts later entries down, preserving order.
     bool erase(const K& key) {
-        auto found = index_.find(key);
-        if (found == index_.end()) {
+        auto found = m_index.find(key);
+        if (found == m_index.end()) {
             return false;
         }
         const size_type removed = found->second;
-        storage_.erase(storage_.begin() + static_cast<std::ptrdiff_t>(removed));
-        index_.erase(found);
-        for (auto& entry : index_) {
+        m_storage.erase(m_storage.begin() + static_cast<std::ptrdiff_t>(removed));
+        m_index.erase(found);
+        for (auto& entry : m_index) {
             if (entry.second > removed) {
                 --entry.second;
             }
@@ -111,49 +111,49 @@ public:
 
     // O(1): moves the last entry into the hole, so order changes.
     bool swapErase(const K& key) {
-        auto found = index_.find(key);
-        if (found == index_.end()) {
+        auto found = m_index.find(key);
+        if (found == m_index.end()) {
             return false;
         }
         const size_type removed = found->second;
-        const size_type last = storage_.size() - 1;
+        const size_type last = m_storage.size() - 1;
         if (removed != last) {
-            storage_[removed] = std::move(storage_[last]);
-            index_[storage_[removed].first] = removed;
+            m_storage[removed] = std::move(m_storage[last]);
+            m_index[m_storage[removed].first] = removed;
         }
-        storage_.pop_back();
-        index_.erase(found);
+        m_storage.pop_back();
+        m_index.erase(found);
         return true;
     }
 
     void clear() noexcept {
-        storage_.clear();
-        index_.clear();
+        m_storage.clear();
+        m_index.clear();
     }
 
-    iterator begin() noexcept { return storage_.begin(); }
-    iterator end() noexcept { return storage_.end(); }
-    const_iterator begin() const noexcept { return storage_.begin(); }
-    const_iterator end() const noexcept { return storage_.end(); }
-    const_iterator cbegin() const noexcept { return storage_.cbegin(); }
-    const_iterator cend() const noexcept { return storage_.cend(); }
+    iterator begin() noexcept { return m_storage.begin(); }
+    iterator end() noexcept { return m_storage.end(); }
+    const_iterator begin() const noexcept { return m_storage.begin(); }
+    const_iterator end() const noexcept { return m_storage.end(); }
+    const_iterator cbegin() const noexcept { return m_storage.cbegin(); }
+    const_iterator cend() const noexcept { return m_storage.cend(); }
 
-    value_type& entryAt(size_type index) noexcept { return storage_[index]; }
-    const value_type& entryAt(size_type index) const noexcept { return storage_[index]; }
+    value_type& entryAt(size_type index) noexcept { return m_storage[index]; }
+    const value_type& entryAt(size_type index) const noexcept { return m_storage[index]; }
 
-    const K& keyAt(size_type index) const noexcept { return storage_[index].first; }
+    const K& keyAt(size_type index) const noexcept { return m_storage[index].first; }
 
-    V& valueAt(size_type index) noexcept { return storage_[index].second; }
-    const V& valueAt(size_type index) const noexcept { return storage_[index].second; }
+    V& valueAt(size_type index) noexcept { return m_storage[index].second; }
+    const V& valueAt(size_type index) const noexcept { return m_storage[index].second; }
 
     void swap(IndexMap& other) noexcept {
-        storage_.swap(other.storage_);
-        index_.swap(other.index_);
+        m_storage.swap(other.m_storage);
+        m_index.swap(other.m_index);
     }
 
 private:
-    storage_type storage_;
-    std::unordered_map<K, size_type, Hash, Equal> index_;
+    storage_type m_storage;
+    std::unordered_map<K, size_type, Hash, Equal> m_index;
 };
 
 } // namespace containers

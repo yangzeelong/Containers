@@ -15,7 +15,8 @@
   `Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`Cell`/`RefCell`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
 - `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`、`BitSet`。
 - `concurrency/`：并发原语——阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者
-  环形队列 `SpscQueue`、`AtomicSharedPtr`、`Thread`/`ScopedThread`。
+  环形队列 `SpscQueue`、无锁多生产者单消费者队列 `MpscQueue`、`AtomicSharedPtr`、
+  `Thread`/`ScopedThread`。
 
 **它不依赖任何框架运行时**：没有 pipeline、没有消息执行、没有调度——每个组件都能
 独立使用，全部行为（拷贝、分离、进出队、阻塞、唤醒）可以在单测、CI、甚至没装任何
@@ -30,7 +31,7 @@
 | `include/containers/message/Message.hpp` | COW 消息容器 + 消息元数据 |
 | `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、StringView、Result、Unit、Cow、OnceCell、Cell、RefCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
 | `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap、BitSet） |
-| `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、AtomicSharedPtr、Thread/ScopedThread） |
+| `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、MpscQueue、AtomicSharedPtr、Thread/ScopedThread） |
 | `tests/` | 单测（按组件分组：message/stdx/collections/concurrency/bench，自动编译进 `containers_tests`） |
 | `benchmarks/` | Google Benchmark（同样按组件分组）+ `benchmark_main.cpp`；`benchmarks/perf/` 是 perf-eval runner |
 | `benchmarks/perf/` | `containers_perf_eval`：目标阈值判定 + Markdown 报告 |
@@ -60,11 +61,21 @@
 | BitSet（动态位集） | `include/containers/collections/BitSet.hpp` |
 | 性能评估框架 | `include/containers/bench/PerfEval.hpp` + `benchmarks/perf/PerfEvaluatorMain.cpp` |
 | 并发队列 / 无锁 SPSC 环形队列 | `include/containers/concurrency/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
+| 无锁 MPSC 环形队列 | `include/containers/concurrency/MpscQueue.hpp` |
 | Thread / ScopedThread（RAII 线程） | `include/containers/concurrency/Thread.hpp` |
 | 发布规则（包导出） | `cmake/ContainersConfig.cmake.in` + 根 `CMakeLists.txt` 末尾 install 部分 |
 | 单测 | `tests/**/*Test.cpp`（按组件分组，任何 `*Test.cpp` 都会被自动编译进 `containers_tests`） |
 | 基准 | `benchmarks/**/Benchmark*.cpp` |
 | 性能评估用例 / 阈值 | `benchmarks/perf/PerfEvaluatorMain.cpp`（`AddCase` 一处注册） |
+
+### 命名约定
+
+- 类的私有 / 受保护数据成员：`m_` + lowerCamelCase（例如 `m_value`、`m_heapMode`、
+  `m_sharedBorrows`、`m_writePos`），不再使用尾部下划线（`value_`）。
+- 公开聚合 struct 的字段（`MessageMeta`、队列的 `Stats`、`PerfStats`/`PerfOptions`/
+  `PerfCase`/`PerfResult`）保持无前缀 lowerCamelCase，它们是对外数据 API。
+- 函数、参数、局部变量：lowerCamelCase，无前缀。类内静态常量用 `k` + CamelCase
+  （如 `kBitsPerWord`）；类型名用 CamelCase。
 
 特别注意：`SpscQueue` 的环形缓冲里 head/tail 按 cache line 隔开（wake-up handshake
 是 Dekker 型 StoreLoad），改热点索引时必须同步改 padding，否则会退化成
@@ -165,7 +176,7 @@ ctest --test-dir build --output-on-failure
   `--tolerance` 给默认容差，超标退出码 1，`--no-check` 只出报告。`ctest` 跑一条
   `--no-check` 短冒烟，保证框架本身不腐化。
 - 本地实测（Clang 19.1.5 Release）：`ctest` 3/3 通过——`containers_tests` 1.9s
-  （30 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 76s。基准数字
+  （31 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 76s。基准数字
   基线（16/2048 元素）：`BM_MessageCopy` 0.011/0.011 us、`BM_MessageConstruction`
   0.093/0.135 us、`BM_MessageCOWDetach` 0.074/0.105 us、`BM_MessageClone`
   0.065/0.093 us、`BM_SpscQueueMessageTransfer` 0.076 us；拷贝成本与 payload 大小

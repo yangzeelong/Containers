@@ -37,36 +37,36 @@ public:
     SlotMap() = default;
 
     key_type insert(T value) {
-        if (!free_.empty()) {
-            const std::uint32_t index = free_.back();
-            free_.pop_back();
-            Slot& slot = slots_[index];
+        if (!m_free.empty()) {
+            const std::uint32_t index = m_free.back();
+            m_free.pop_back();
+            Slot& slot = m_slots[index];
             assert(!slot.value.hasValue());
             slot.value.emplace(std::move(value));
             ++slot.generation;
-            ++size_;
+            ++m_size;
             return key_type{index, slot.generation};
         }
 
-        slots_.emplace_back();
-        Slot& slot = slots_.back();
+        m_slots.emplace_back();
+        Slot& slot = m_slots.back();
         slot.value.emplace(std::move(value));
-        ++size_;
-        return key_type{static_cast<std::uint32_t>(slots_.size() - 1), slot.generation};
+        ++m_size;
+        return key_type{static_cast<std::uint32_t>(m_slots.size() - 1), slot.generation};
     }
 
     T* get(key_type key) {
         if (!isAlive(key)) {
             return nullptr;
         }
-        return &slots_[key.index].value.value();
+        return &m_slots[key.index].value.value();
     }
 
     const T* get(key_type key) const {
         if (!isAlive(key)) {
             return nullptr;
         }
-        return &slots_[key.index].value.value();
+        return &m_slots[key.index].value.value();
     }
 
     bool contains(key_type key) const { return isAlive(key); }
@@ -87,35 +87,35 @@ public:
         if (!isAlive(key)) {
             return false;
         }
-        Slot& slot = slots_[key.index];
+        Slot& slot = m_slots[key.index];
         slot.value.reset();
         ++slot.generation;
-        free_.push_back(key.index);
-        --size_;
+        m_free.push_back(key.index);
+        --m_size;
         return true;
     }
 
-    size_type size() const noexcept { return size_; }
-    bool empty() const noexcept { return size_ == 0; }
-    size_type capacity() const noexcept { return slots_.size(); }
+    size_type size() const noexcept { return m_size; }
+    bool empty() const noexcept { return m_size == 0; }
+    size_type capacity() const noexcept { return m_slots.size(); }
 
     // Invalidates every outstanding key, but keeps the slots for reuse (old
     // keys stay dead because generations are bumped).
     void clear() {
-        for (size_type index = 0; index < slots_.size(); ++index) {
-            Slot& slot = slots_[index];
+        for (size_type index = 0; index < m_slots.size(); ++index) {
+            Slot& slot = m_slots[index];
             if (slot.value.hasValue()) {
                 slot.value.reset();
                 ++slot.generation;
-                free_.push_back(static_cast<std::uint32_t>(index));
+                m_free.push_back(static_cast<std::uint32_t>(index));
             }
         }
-        size_ = 0;
+        m_size = 0;
     }
 
     template <typename F>
     void forEach(F&& visitor) {
-        for (auto& slot : slots_) {
+        for (auto& slot : m_slots) {
             if (slot.value.hasValue()) {
                 visitor(slot.value.value());
             }
@@ -124,7 +124,7 @@ public:
 
     template <typename F>
     void forEach(F&& visitor) const {
-        for (const auto& slot : slots_) {
+        for (const auto& slot : m_slots) {
             if (slot.value.hasValue()) {
                 visitor(slot.value.value());
             }
@@ -138,14 +138,14 @@ private:
     };
 
     bool isAlive(key_type key) const {
-        return key.index < slots_.size() &&
-               slots_[key.index].generation == key.generation &&
-               slots_[key.index].value.hasValue();
+        return key.index < m_slots.size() &&
+               m_slots[key.index].generation == key.generation &&
+               m_slots[key.index].value.hasValue();
     }
 
-    std::vector<Slot> slots_;
-    std::vector<std::uint32_t> free_;
-    size_type size_ = 0;
+    std::vector<Slot> m_slots;
+    std::vector<std::uint32_t> m_free;
+    size_type m_size = 0;
 };
 
 } // namespace containers

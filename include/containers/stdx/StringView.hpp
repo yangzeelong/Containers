@@ -20,109 +20,109 @@ public:
 
     static constexpr size_type npos = static_cast<size_type>(-1);
 
-    constexpr StringView() noexcept : data_(nullptr), size_(0) {}
+    constexpr StringView() noexcept : m_data(nullptr), m_size(0) {}
 
     constexpr StringView(const char* data, size_type size) noexcept
-        : data_(data), size_(size) {}
+        : m_data(data), m_size(size) {}
 
     StringView(const char* text)
-        : data_(text), size_(text == nullptr ? 0 : std::strlen(text)) {}
+        : m_data(text), m_size(text == nullptr ? 0 : std::strlen(text)) {}
 
     StringView(const std::string& text) noexcept
-        : data_(text.data()), size_(text.size()) {}
+        : m_data(text.data()), m_size(text.size()) {}
 
     template <size_type N>
     constexpr StringView(const char (&text)[N]) noexcept
-        : data_(text), size_(N > 0 && text[N - 1] == '\0' ? N - 1 : N) {}
+        : m_data(text), m_size(N > 0 && text[N - 1] == '\0' ? N - 1 : N) {}
 
-    constexpr const char* data() const noexcept { return data_; }
-    constexpr size_type size() const noexcept { return size_; }
-    constexpr size_type length() const noexcept { return size_; }
-    constexpr bool empty() const noexcept { return size_ == 0; }
+    constexpr const char* data() const noexcept { return m_data; }
+    constexpr size_type size() const noexcept { return m_size; }
+    constexpr size_type length() const noexcept { return m_size; }
+    constexpr bool empty() const noexcept { return m_size == 0; }
 
-    constexpr const char* begin() const noexcept { return data_; }
-    constexpr const char* end() const noexcept { return data_ + size_; }
+    constexpr const char* begin() const noexcept { return m_data; }
+    constexpr const char* end() const noexcept { return m_data + m_size; }
 
-    constexpr char operator[](size_type index) const noexcept { return data_[index]; }
+    constexpr char operator[](size_type index) const noexcept { return m_data[index]; }
 
     char front() const {
         assert(!empty());
-        return data_[0];
+        return m_data[0];
     }
 
     char back() const {
         assert(!empty());
-        return data_[size_ - 1];
+        return m_data[m_size - 1];
     }
 
     void removePrefix(size_type count) noexcept {
-        assert(count <= size_);
-        data_ += count;
-        size_ -= count;
+        assert(count <= m_size);
+        m_data += count;
+        m_size -= count;
     }
 
     void removeSuffix(size_type count) noexcept {
-        assert(count <= size_);
-        size_ -= count;
+        assert(count <= m_size);
+        m_size -= count;
     }
 
     StringView substr(size_type pos = 0, size_type count = npos) const {
-        if (pos >= size_) {
+        if (pos >= m_size) {
             return StringView();
         }
-        const size_type available = size_ - pos;
+        const size_type available = m_size - pos;
         const size_type length = count < available ? count : available;
-        return length == 0 ? StringView() : StringView(data_ + pos, length);
+        return length == 0 ? StringView() : StringView(m_data + pos, length);
     }
 
     int compare(StringView other) const {
-        const size_type common = size_ < other.size_ ? size_ : other.size_;
+        const size_type common = m_size < other.m_size ? m_size : other.m_size;
         if (common != 0) {
-            const int result = std::memcmp(data_, other.data_, common);
+            const int result = std::memcmp(m_data, other.m_data, common);
             if (result != 0) {
                 return result < 0 ? -1 : 1;
             }
         }
-        if (size_ == other.size_) {
+        if (m_size == other.m_size) {
             return 0;
         }
-        return size_ < other.size_ ? -1 : 1;
+        return m_size < other.m_size ? -1 : 1;
     }
 
     bool startsWith(StringView prefix) const {
-        return prefix.size_ <= size_ &&
-               (prefix.size_ == 0 || std::memcmp(data_, prefix.data_, prefix.size_) == 0);
+        return prefix.m_size <= m_size &&
+               (prefix.m_size == 0 || std::memcmp(m_data, prefix.m_data, prefix.m_size) == 0);
     }
 
-    bool startsWith(char prefix) const { return !empty() && data_[0] == prefix; }
+    bool startsWith(char prefix) const { return !empty() && m_data[0] == prefix; }
 
     bool endsWith(StringView suffix) const {
-        return suffix.size_ <= size_ &&
-               (suffix.size_ == 0 ||
-                std::memcmp(data_ + size_ - suffix.size_, suffix.data_, suffix.size_) == 0);
+        return suffix.m_size <= m_size &&
+               (suffix.m_size == 0 ||
+                std::memcmp(m_data + m_size - suffix.m_size, suffix.m_data, suffix.m_size) == 0);
     }
 
-    bool endsWith(char suffix) const { return !empty() && data_[size_ - 1] == suffix; }
+    bool endsWith(char suffix) const { return !empty() && m_data[m_size - 1] == suffix; }
 
     size_type find(char needle, size_type pos = 0) const {
-        if (pos >= size_) {
+        if (pos >= m_size) {
             return npos;
         }
         const void* hit =
-            std::memchr(data_ + pos, static_cast<unsigned char>(needle), size_ - pos);
+            std::memchr(m_data + pos, static_cast<unsigned char>(needle), m_size - pos);
         return hit == nullptr ? npos
-                              : static_cast<size_type>(static_cast<const char*>(hit) - data_);
+                              : static_cast<size_type>(static_cast<const char*>(hit) - m_data);
     }
 
     size_type find(StringView needle, size_type pos = 0) const {
         if (needle.empty()) {
-            return pos <= size_ ? pos : npos;
+            return pos <= m_size ? pos : npos;
         }
-        if (pos >= size_ || needle.size_ > size_ - pos) {
+        if (pos >= m_size || needle.m_size > m_size - pos) {
             return npos;
         }
-        for (size_type index = pos; index + needle.size_ <= size_; ++index) {
-            if (std::memcmp(data_ + index, needle.data_, needle.size_) == 0) {
+        for (size_type index = pos; index + needle.m_size <= m_size; ++index) {
+            if (std::memcmp(m_data + index, needle.m_data, needle.m_size) == 0) {
                 return index;
             }
         }
@@ -133,9 +133,9 @@ public:
         if (empty()) {
             return npos;
         }
-        size_type index = pos >= size_ ? size_ - 1 : pos;
+        size_type index = pos >= m_size ? m_size - 1 : pos;
         while (true) {
-            if (data_[index] == needle) {
+            if (m_data[index] == needle) {
                 return index;
             }
             if (index == 0) {
@@ -148,15 +148,15 @@ public:
 
     size_type rfind(StringView needle, size_type pos = npos) const {
         if (needle.empty()) {
-            return pos >= size_ ? size_ : pos;
+            return pos >= m_size ? m_size : pos;
         }
-        if (needle.size_ > size_) {
+        if (needle.m_size > m_size) {
             return npos;
         }
-        const size_type last = size_ - needle.size_;
+        const size_type last = m_size - needle.m_size;
         size_type index = pos >= last ? last : pos;
         while (true) {
-            if (std::memcmp(data_ + index, needle.data_, needle.size_) == 0) {
+            if (std::memcmp(m_data + index, needle.m_data, needle.m_size) == 0) {
                 return index;
             }
             if (index == 0) {
@@ -170,12 +170,12 @@ public:
     bool contains(StringView needle) const { return find(needle) != npos; }
 
     std::string toString() const {
-        return empty() ? std::string() : std::string(data_, size_);
+        return empty() ? std::string() : std::string(m_data, m_size);
     }
 
 private:
-    const char* data_;
-    size_type size_;
+    const char* m_data;
+    size_type m_size;
 };
 
 inline bool operator==(StringView lhs, StringView rhs) {

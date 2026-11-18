@@ -109,30 +109,30 @@ public:
     using value_type = T;
     using error_type = E;
 
-    Result(const Result& other) : ok_(other.ok_) {
-        if (ok_) {
-            new (&storage_.value) T(other.storage_.value);
+    Result(const Result& other) : m_ok(other.m_ok) {
+        if (m_ok) {
+            new (&m_storage.value) T(other.m_storage.value);
         } else {
-            new (&storage_.error) E(other.storage_.error);
+            new (&m_storage.error) E(other.m_storage.error);
         }
     }
 
-    Result(Result&& other) : ok_(other.ok_) {
-        if (ok_) {
-            new (&storage_.value) T(std::move(other.storage_.value));
+    Result(Result&& other) : m_ok(other.m_ok) {
+        if (m_ok) {
+            new (&m_storage.value) T(std::move(other.m_storage.value));
         } else {
-            new (&storage_.error) E(std::move(other.storage_.error));
+            new (&m_storage.error) E(std::move(other.m_storage.error));
         }
     }
 
     Result& operator=(const Result& other) {
         if (this != &other) {
             destroy();
-            ok_ = other.ok_;
-            if (ok_) {
-                new (&storage_.value) T(other.storage_.value);
+            m_ok = other.m_ok;
+            if (m_ok) {
+                new (&m_storage.value) T(other.m_storage.value);
             } else {
-                new (&storage_.error) E(other.storage_.error);
+                new (&m_storage.error) E(other.m_storage.error);
             }
         }
         return *this;
@@ -141,11 +141,11 @@ public:
     Result& operator=(Result&& other) {
         if (this != &other) {
             destroy();
-            ok_ = other.ok_;
-            if (ok_) {
-                new (&storage_.value) T(std::move(other.storage_.value));
+            m_ok = other.m_ok;
+            if (m_ok) {
+                new (&m_storage.value) T(std::move(other.m_storage.value));
             } else {
-                new (&storage_.error) E(std::move(other.storage_.error));
+                new (&m_storage.error) E(std::move(other.m_storage.error));
             }
         }
         return *this;
@@ -158,41 +158,41 @@ public:
     static Result Err(const E& error) { return Result(ErrTag{}, error); }
     static Result Err(E&& error) { return Result(ErrTag{}, std::move(error)); }
 
-    CS_NODISCARD bool isOk() const noexcept { return ok_; }
-    CS_NODISCARD bool isErr() const noexcept { return !ok_; }
+    CS_NODISCARD bool isOk() const noexcept { return m_ok; }
+    CS_NODISCARD bool isErr() const noexcept { return !m_ok; }
 
     T& value() {
-        assert(ok_);
-        return storage_.value;
+        assert(m_ok);
+        return m_storage.value;
     }
 
     const T& value() const {
-        assert(ok_);
-        return storage_.value;
+        assert(m_ok);
+        return m_storage.value;
     }
 
     E& error() {
-        assert(!ok_);
-        return storage_.error;
+        assert(!m_ok);
+        return m_storage.error;
     }
 
     const E& error() const {
-        assert(!ok_);
-        return storage_.error;
+        assert(!m_ok);
+        return m_storage.error;
     }
 
     T unwrap() const {
-        assert(ok_);
-        return storage_.value;
+        assert(m_ok);
+        return m_storage.value;
     }
 
     E unwrapErr() const {
-        assert(!ok_);
-        return storage_.error;
+        assert(!m_ok);
+        return m_storage.error;
     }
 
     T unwrapOr(T fallback) const {
-        return ok_ ? storage_.value : std::move(fallback);
+        return m_ok ? m_storage.value : std::move(fallback);
     }
 
     template <typename F>
@@ -202,11 +202,11 @@ public:
                   E> {
         using U = typename std::decay<decltype(std::declval<F&>()(
             std::declval<const T&>()))>::type;
-        if (ok_) {
+        if (m_ok) {
             return detail::ResultMapOk<U>::template call<E>(std::forward<F>(f),
-                                                             storage_.value);
+                                                             m_storage.value);
         }
-        return detail::ResultBuilder<U, E>::err(storage_.error);
+        return detail::ResultBuilder<U, E>::err(m_storage.error);
     }
 
     template <typename F>
@@ -215,10 +215,10 @@ public:
                        std::declval<const E&>()))>::type> {
         using F2 = typename std::decay<decltype(std::declval<F&>()(
             std::declval<const E&>()))>::type;
-        if (ok_) {
-            return Result<T, F2>::Ok(storage_.value);
+        if (m_ok) {
+            return Result<T, F2>::Ok(m_storage.value);
         }
-        return Result<T, F2>::Err(std::forward<F>(f)(storage_.error));
+        return Result<T, F2>::Err(std::forward<F>(f)(m_storage.error));
     }
 
     template <typename F>
@@ -227,39 +227,39 @@ public:
             std::declval<const T&>()))>::type {
         using R = typename std::decay<decltype(std::declval<F&>()(
             std::declval<const T&>()))>::type;
-        if (ok_) {
-            return std::forward<F>(f)(storage_.value);
+        if (m_ok) {
+            return std::forward<F>(f)(m_storage.value);
         }
-        return R::Err(storage_.error);
+        return R::Err(m_storage.error);
     }
 
 private:
-    explicit Result(OkTag, const T& value) : ok_(true) {
-        new (&storage_.value) T(value);
+    explicit Result(OkTag, const T& value) : m_ok(true) {
+        new (&m_storage.value) T(value);
     }
 
-    explicit Result(OkTag, T&& value) : ok_(true) {
-        new (&storage_.value) T(std::move(value));
+    explicit Result(OkTag, T&& value) : m_ok(true) {
+        new (&m_storage.value) T(std::move(value));
     }
 
-    explicit Result(ErrTag, const E& error) : ok_(false) {
-        new (&storage_.error) E(error);
+    explicit Result(ErrTag, const E& error) : m_ok(false) {
+        new (&m_storage.error) E(error);
     }
 
-    explicit Result(ErrTag, E&& error) : ok_(false) {
-        new (&storage_.error) E(std::move(error));
+    explicit Result(ErrTag, E&& error) : m_ok(false) {
+        new (&m_storage.error) E(std::move(error));
     }
 
     void destroy() noexcept {
-        if (ok_) {
-            storage_.value.~T();
+        if (m_ok) {
+            m_storage.value.~T();
         } else {
-            storage_.error.~E();
+            m_storage.error.~E();
         }
     }
 
-    Storage storage_;
-    bool ok_;
+    Storage m_storage;
+    bool m_ok;
 };
 
 // `Result<void, E>`: no payload, only success/failure. Kept as an explicit
@@ -283,24 +283,24 @@ public:
     using value_type = void;
     using error_type = E;
 
-    Result(const Result& other) : ok_(other.ok_) {
-        if (!ok_) {
-            new (&storage_.error) E(other.storage_.error);
+    Result(const Result& other) : m_ok(other.m_ok) {
+        if (!m_ok) {
+            new (&m_storage.error) E(other.m_storage.error);
         }
     }
 
-    Result(Result&& other) : ok_(other.ok_) {
-        if (!ok_) {
-            new (&storage_.error) E(std::move(other.storage_.error));
+    Result(Result&& other) : m_ok(other.m_ok) {
+        if (!m_ok) {
+            new (&m_storage.error) E(std::move(other.m_storage.error));
         }
     }
 
     Result& operator=(const Result& other) {
         if (this != &other) {
             destroy();
-            ok_ = other.ok_;
-            if (!ok_) {
-                new (&storage_.error) E(other.storage_.error);
+            m_ok = other.m_ok;
+            if (!m_ok) {
+                new (&m_storage.error) E(other.m_storage.error);
             }
         }
         return *this;
@@ -309,9 +309,9 @@ public:
     Result& operator=(Result&& other) {
         if (this != &other) {
             destroy();
-            ok_ = other.ok_;
-            if (!ok_) {
-                new (&storage_.error) E(std::move(other.storage_.error));
+            m_ok = other.m_ok;
+            if (!m_ok) {
+                new (&m_storage.error) E(std::move(other.m_storage.error));
             }
         }
         return *this;
@@ -323,63 +323,63 @@ public:
     static Result Err(const E& error) { return Result(ErrTag{}, error); }
     static Result Err(E&& error) { return Result(ErrTag{}, std::move(error)); }
 
-    CS_NODISCARD bool isOk() const noexcept { return ok_; }
-    CS_NODISCARD bool isErr() const noexcept { return !ok_; }
+    CS_NODISCARD bool isOk() const noexcept { return m_ok; }
+    CS_NODISCARD bool isErr() const noexcept { return !m_ok; }
 
     E& error() {
-        assert(!ok_);
-        return storage_.error;
+        assert(!m_ok);
+        return m_storage.error;
     }
 
     const E& error() const {
-        assert(!ok_);
-        return storage_.error;
+        assert(!m_ok);
+        return m_storage.error;
     }
 
     E unwrapErr() const {
-        assert(!ok_);
-        return storage_.error;
+        assert(!m_ok);
+        return m_storage.error;
     }
 
-    void unwrap() const { assert(ok_); }
+    void unwrap() const { assert(m_ok); }
 
     template <typename F>
     CS_NODISCARD auto map(F&& f) const
         -> Result<typename std::decay<decltype(std::declval<F&>()())>::type, E> {
         using U = typename std::decay<decltype(std::declval<F&>()())>::type;
-        if (ok_) {
+        if (m_ok) {
             return detail::ResultMapOkNoArg<U>::template call<E>(std::forward<F>(f));
         }
-        return detail::ResultBuilder<U, E>::err(storage_.error);
+        return detail::ResultBuilder<U, E>::err(m_storage.error);
     }
 
     template <typename F>
     CS_NODISCARD auto andThen(F&& f) const
         -> typename std::decay<decltype(std::declval<F&>()())>::type {
         using R = typename std::decay<decltype(std::declval<F&>()())>::type;
-        if (ok_) {
+        if (m_ok) {
             return std::forward<F>(f)();
         }
-        return R::Err(storage_.error);
+        return R::Err(m_storage.error);
     }
 
 private:
-    explicit Result(OkTag) noexcept : ok_(true) {}
-    explicit Result(ErrTag, const E& error) : ok_(false) {
-        new (&storage_.error) E(error);
+    explicit Result(OkTag) noexcept : m_ok(true) {}
+    explicit Result(ErrTag, const E& error) : m_ok(false) {
+        new (&m_storage.error) E(error);
     }
-    explicit Result(ErrTag, E&& error) : ok_(false) {
-        new (&storage_.error) E(std::move(error));
+    explicit Result(ErrTag, E&& error) : m_ok(false) {
+        new (&m_storage.error) E(std::move(error));
     }
 
     void destroy() noexcept {
-        if (!ok_) {
-            storage_.error.~E();
+        if (!m_ok) {
+            m_storage.error.~E();
         }
     }
 
-    Storage storage_;
-    bool ok_;
+    Storage m_storage;
+    bool m_ok;
 };
 
 } // namespace containers

@@ -16,57 +16,57 @@ public:
     using enum_type = Enum;
     using underlying_type = typename std::underlying_type<Enum>::type;
 
-    BitFlags() noexcept : bits_(0) {}
+    BitFlags() noexcept : m_bits(0) {}
 
-    explicit BitFlags(underlying_type bits) noexcept : bits_(bits) {}
+    explicit BitFlags(underlying_type bits) noexcept : m_bits(bits) {}
 
     static BitFlags Of(Enum flag) noexcept {
         return BitFlags(static_cast<underlying_type>(flag));
     }
 
-    underlying_type bits() const noexcept { return bits_; }
-    bool empty() const noexcept { return bits_ == 0; }
+    underlying_type bits() const noexcept { return m_bits; }
+    bool empty() const noexcept { return m_bits == 0; }
 
     bool contains(Enum flag) const noexcept {
         const underlying_type mask = static_cast<underlying_type>(flag);
-        return (bits_ & mask) == mask;
+        return (m_bits & mask) == mask;
     }
 
     bool containsAll(BitFlags other) const noexcept {
-        return (bits_ & other.bits_) == other.bits_;
+        return (m_bits & other.m_bits) == other.m_bits;
     }
 
     bool containsAny(BitFlags other) const noexcept {
-        return (bits_ & other.bits_) != 0;
+        return (m_bits & other.m_bits) != 0;
     }
 
-    void insert(Enum flag) noexcept { bits_ |= static_cast<underlying_type>(flag); }
-    void insert(BitFlags other) noexcept { bits_ |= other.bits_; }
-    void remove(Enum flag) noexcept { bits_ &= static_cast<underlying_type>(~static_cast<underlying_type>(flag)); }
-    void clear() noexcept { bits_ = 0; }
+    void insert(Enum flag) noexcept { m_bits |= static_cast<underlying_type>(flag); }
+    void insert(BitFlags other) noexcept { m_bits |= other.m_bits; }
+    void remove(Enum flag) noexcept { m_bits &= static_cast<underlying_type>(~static_cast<underlying_type>(flag)); }
+    void clear() noexcept { m_bits = 0; }
 
     BitFlags& operator|=(BitFlags other) noexcept {
-        bits_ |= other.bits_;
+        m_bits |= other.m_bits;
         return *this;
     }
 
     BitFlags& operator&=(BitFlags other) noexcept {
-        bits_ &= other.bits_;
+        m_bits &= other.m_bits;
         return *this;
     }
 
     BitFlags& operator^=(BitFlags other) noexcept {
-        bits_ ^= other.bits_;
+        m_bits ^= other.m_bits;
         return *this;
     }
 
-    bool operator==(BitFlags other) const noexcept { return bits_ == other.bits_; }
-    bool operator!=(BitFlags other) const noexcept { return bits_ != other.bits_; }
+    bool operator==(BitFlags other) const noexcept { return m_bits == other.m_bits; }
+    bool operator!=(BitFlags other) const noexcept { return m_bits != other.m_bits; }
 
-    BitFlags operator~() const noexcept { return BitFlags(static_cast<underlying_type>(~bits_)); }
+    BitFlags operator~() const noexcept { return BitFlags(static_cast<underlying_type>(~m_bits)); }
 
 private:
-    underlying_type bits_;
+    underlying_type m_bits;
 };
 
 template <typename Enum>
