@@ -18,7 +18,10 @@ public:
     using value_type = char;
     using size_type = std::size_t;
 
-    static constexpr size_type npos = static_cast<size_type>(-1);
+    // An enum constant (not a static constexpr member) so C++14 debug builds
+    // never need an out-of-class definition when npos is odr-used, e.g. bound
+    // to a const reference by a comparison helper.
+    enum : size_type { npos = static_cast<size_type>(-1) };
 
     constexpr StringView() noexcept : m_data(nullptr), m_size(0) {}
 
@@ -215,7 +218,7 @@ struct StringViewHash {
 inline namespace literals {
 inline namespace string_view_literals {
 
-constexpr StringView operator"" _sv(const char* data, std::size_t size) noexcept {
+constexpr StringView operator""_sv(const char* data, std::size_t size) noexcept {
     return StringView(data, size);
 }
 
