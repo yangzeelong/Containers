@@ -21,41 +21,41 @@ class AtomicSharedPtr {
 public:
     AtomicSharedPtr() noexcept = default;
 
-    explicit AtomicSharedPtr(std::shared_ptr<T> value) : value_(std::move(value)) {}
+    explicit AtomicSharedPtr(std::shared_ptr<T> value) : m_value(std::move(value)) {}
 
     AtomicSharedPtr(const AtomicSharedPtr&) = delete;
     AtomicSharedPtr& operator=(const AtomicSharedPtr&) = delete;
 
     std::shared_ptr<T> load() const {
-        std::lock_guard<std::mutex> guard(mutex_);
-        return value_;
+        std::lock_guard<std::mutex> guard(m_mutex);
+        return m_value;
     }
 
     void store(std::shared_ptr<T> value) {
-        std::lock_guard<std::mutex> guard(mutex_);
-        value_ = std::move(value);
+        std::lock_guard<std::mutex> guard(m_mutex);
+        m_value = std::move(value);
     }
 
     std::shared_ptr<T> exchange(std::shared_ptr<T> value) {
-        std::lock_guard<std::mutex> guard(mutex_);
-        std::shared_ptr<T> previous = value_;
-        value_ = std::move(value);
+        std::lock_guard<std::mutex> guard(m_mutex);
+        std::shared_ptr<T> previous = m_value;
+        m_value = std::move(value);
         return previous;
     }
 
     bool compareExchange(std::shared_ptr<T>& expected, std::shared_ptr<T> desired) {
-        std::lock_guard<std::mutex> guard(mutex_);
-        if (value_ != expected) {
-            expected = value_;
+        std::lock_guard<std::mutex> guard(m_mutex);
+        if (m_value != expected) {
+            expected = m_value;
             return false;
         }
-        value_ = std::move(desired);
+        m_value = std::move(desired);
         return true;
     }
 
 private:
-    mutable std::mutex mutex_;
-    std::shared_ptr<T> value_;
+    mutable std::mutex m_mutex;
+    std::shared_ptr<T> m_value;
 };
 
 } // namespace containers

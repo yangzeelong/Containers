@@ -13,16 +13,16 @@ public:
 
     template <typename Function, typename... Args>
     explicit Thread(Function&& function, Args&&... args)
-        : worker_(std::forward<Function>(function), std::forward<Args>(args)...) {}
+        : m_worker(std::forward<Function>(function), std::forward<Args>(args)...) {}
 
-    Thread(Thread&& other) noexcept : worker_(std::move(other.worker_)) {}
+    Thread(Thread&& other) noexcept : m_worker(std::move(other.m_worker)) {}
 
     Thread& operator=(Thread&& other) {
         if (this != &other) {
-            if (worker_.joinable()) {
-                worker_.join();
+            if (m_worker.joinable()) {
+                m_worker.join();
             }
-            worker_ = std::move(other.worker_);
+            m_worker = std::move(other.m_worker);
         }
         return *this;
     }
@@ -31,27 +31,27 @@ public:
     Thread& operator=(const Thread&) = delete;
 
     ~Thread() {
-        if (worker_.joinable()) {
-            worker_.join();
+        if (m_worker.joinable()) {
+            m_worker.join();
         }
     }
 
-    bool joinable() const noexcept { return worker_.joinable(); }
+    bool joinable() const noexcept { return m_worker.joinable(); }
 
     // Joins the worker; throws std::system_error if the thread is not joinable.
-    void join() { worker_.join(); }
+    void join() { m_worker.join(); }
 
     // Releases the worker; the caller becomes responsible for its lifetime.
-    void detach() { worker_.detach(); }
+    void detach() { m_worker.detach(); }
 
-    void swap(Thread& other) noexcept { worker_.swap(other.worker_); }
+    void swap(Thread& other) noexcept { m_worker.swap(other.m_worker); }
 
     static unsigned hardwareConcurrency() noexcept {
         return std::thread::hardware_concurrency();
     }
 
 private:
-    std::thread worker_;
+    std::thread m_worker;
 };
 
 // Non-movable, non-detachable thread wrapper for structured concurrency: the
@@ -60,7 +60,7 @@ class ScopedThread {
 public:
     template <typename Function, typename... Args>
     explicit ScopedThread(Function&& function, Args&&... args)
-        : worker_(std::forward<Function>(function), std::forward<Args>(args)...) {}
+        : m_worker(std::forward<Function>(function), std::forward<Args>(args)...) {}
 
     ScopedThread(const ScopedThread&) = delete;
     ScopedThread& operator=(const ScopedThread&) = delete;
@@ -68,21 +68,21 @@ public:
     ScopedThread& operator=(ScopedThread&&) = delete;
 
     ~ScopedThread() {
-        if (worker_.joinable()) {
-            worker_.join();
+        if (m_worker.joinable()) {
+            m_worker.join();
         }
     }
 
-    bool joinable() const noexcept { return worker_.joinable(); }
+    bool joinable() const noexcept { return m_worker.joinable(); }
 
-    void join() { worker_.join(); }
+    void join() { m_worker.join(); }
 
     static unsigned hardwareConcurrency() noexcept {
         return std::thread::hardware_concurrency();
     }
 
 private:
-    std::thread worker_;
+    std::thread m_worker;
 };
 
 }  // namespace containers

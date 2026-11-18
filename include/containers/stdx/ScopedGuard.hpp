@@ -16,12 +16,12 @@ namespace containers {
 template <typename F>
 class ScopedGuard {
 public:
-    explicit ScopedGuard(F callable) : callable_(std::move(callable)), active_(true) {}
+    explicit ScopedGuard(F callable) : m_callable(std::move(callable)), m_active(true) {}
 
     ScopedGuard(ScopedGuard&& other) noexcept(
         std::is_nothrow_move_constructible<F>::value)
-        : callable_(std::move(other.callable_)), active_(other.active_) {
-        other.active_ = false;
+        : m_callable(std::move(other.m_callable)), m_active(other.m_active) {
+        other.m_active = false;
     }
 
     ScopedGuard(const ScopedGuard&) = delete;
@@ -29,19 +29,19 @@ public:
     ScopedGuard& operator=(ScopedGuard&&) = delete;
 
     ~ScopedGuard() {
-        if (active_) {
-            callable_();
+        if (m_active) {
+            m_callable();
         }
     }
 
     // Disarms the guard: the callable will not run on scope exit.
-    void dismiss() noexcept { active_ = false; }
+    void dismiss() noexcept { m_active = false; }
 
-    CS_NODISCARD bool active() const noexcept { return active_; }
+    CS_NODISCARD bool active() const noexcept { return m_active; }
 
 private:
-    F callable_;
-    bool active_;
+    F m_callable;
+    bool m_active;
 };
 
 // Deduces the callable type, so callers write `OnScopeExit([&] { ... });`.

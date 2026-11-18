@@ -30,40 +30,40 @@ public:
         return Cow(std::move(owner));
     }
 
-    CS_NODISCARD bool isBorrowed() const noexcept { return !owner_; }
-    CS_NODISCARD bool isOwned() const noexcept { return static_cast<bool>(owner_); }
+    CS_NODISCARD bool isBorrowed() const noexcept { return !m_owner; }
+    CS_NODISCARD bool isOwned() const noexcept { return static_cast<bool>(m_owner); }
 
-    const T& get() const noexcept { return owner_ ? *owner_ : *view_; }
+    const T& get() const noexcept { return m_owner ? *m_owner : *m_view; }
     const T& operator*() const noexcept { return get(); }
     const T* operator->() const noexcept { return &get(); }
 
     // Returns a mutable reference, deep-copying first when this Cow only
     // borrowed the value or shares its owner with another Cow.
     T& toMut() {
-        if (!owner_ || owner_.use_count() > 1) {
-            owner_ = std::make_shared<T>(get());
-            view_ = nullptr;
+        if (!m_owner || m_owner.use_count() > 1) {
+            m_owner = std::make_shared<T>(get());
+            m_view = nullptr;
         }
-        return *owner_;
+        return *m_owner;
     }
 
     // Moves the payload out when this is the unique owner, copies otherwise.
     T intoOwned() {
-        if (owner_ && owner_.use_count() == 1) {
-            T value(std::move(*owner_));
-            owner_.reset();
-            view_ = nullptr;
+        if (m_owner && m_owner.use_count() == 1) {
+            T value(std::move(*m_owner));
+            m_owner.reset();
+            m_view = nullptr;
             return value;
         }
         return T(get());
     }
 
 private:
-    explicit Cow(const T* view) : owner_(), view_(view) {}
-    explicit Cow(std::shared_ptr<T> owner) : owner_(std::move(owner)), view_(nullptr) {}
+    explicit Cow(const T* view) : m_owner(), m_view(view) {}
+    explicit Cow(std::shared_ptr<T> owner) : m_owner(std::move(owner)), m_view(nullptr) {}
 
-    std::shared_ptr<T> owner_;
-    const T* view_;
+    std::shared_ptr<T> m_owner;
+    const T* m_view;
 };
 
 } // namespace containers

@@ -38,34 +38,34 @@ public:
         return Copy(text, std::strlen(text));
     }
 
-    std::size_t size() const noexcept { return size_; }
-    bool empty() const noexcept { return size_ == 0; }
+    std::size_t size() const noexcept { return m_size; }
+    bool empty() const noexcept { return m_size == 0; }
 
     const char* data() const noexcept {
-        return storage_ ? storage_->data() + offset_ : nullptr;
+        return m_storage ? m_storage->data() + m_offset : nullptr;
     }
 
     std::string toString() const {
-        return storage_ ? std::string(data(), size_) : std::string();
+        return m_storage ? std::string(data(), m_size) : std::string();
     }
 
     SharedStr slice(std::size_t offset, std::size_t length) const {
-        if (!storage_ || length == 0) {
+        if (!m_storage || length == 0) {
             return SharedStr();
         }
-        assert(offset + length <= size_);
-        return SharedStr(storage_, offset_ + offset, length);
+        assert(offset + length <= m_size);
+        return SharedStr(m_storage, m_offset + offset, length);
     }
 
     SharedStr clone() const { return *this; }
 
 private:
     SharedStr(std::shared_ptr<const storage_type> storage, std::size_t offset, std::size_t size)
-        : storage_(std::move(storage)), offset_(offset), size_(size) {}
+        : m_storage(std::move(storage)), m_offset(offset), m_size(size) {}
 
-    std::shared_ptr<const storage_type> storage_;
-    std::size_t offset_ = 0;
-    std::size_t size_ = 0;
+    std::shared_ptr<const storage_type> m_storage;
+    std::size_t m_offset = 0;
+    std::size_t m_size = 0;
 };
 
 inline bool operator==(const SharedStr& lhs, const SharedStr& rhs) {

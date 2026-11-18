@@ -20,34 +20,34 @@ public:
 
     explicit BitSet(size_type size, bool value = false) { resize(size, value); }
 
-    size_type size() const noexcept { return size_; }
-    bool empty() const noexcept { return size_ == 0; }
-    size_type wordCount() const noexcept { return words_.size(); }
-    const std::vector<word_type>& words() const noexcept { return words_; }
+    size_type size() const noexcept { return m_size; }
+    bool empty() const noexcept { return m_size == 0; }
+    size_type wordCount() const noexcept { return m_words.size(); }
+    const std::vector<word_type>& words() const noexcept { return m_words; }
 
     void resize(size_type size, bool value = false) {
-        const size_type oldSize = size_;
+        const size_type oldSize = m_size;
         const size_type wordCount = WordCount(size);
-        words_.resize(wordCount, value ? ~word_type(0) : word_type(0));
+        m_words.resize(wordCount, value ? ~word_type(0) : word_type(0));
         if (value && size > oldSize) {
             for (size_type bit = oldSize; bit < size; ++bit) {
-                words_[bit / kBitsPerWord] |= Mask(bit);
+                m_words[bit / kBitsPerWord] |= Mask(bit);
             }
         }
-        size_ = size;
+        m_size = size;
         MaskLastWord();
     }
 
     void clear() noexcept {
-        words_.clear();
-        size_ = 0;
+        m_words.clear();
+        m_size = 0;
     }
 
     bool insert(size_type index) {
-        if (index >= size_) {
+        if (index >= m_size) {
             resize(index + 1, false);
         }
-        word_type& word = words_[index / kBitsPerWord];
+        word_type& word = m_words[index / kBitsPerWord];
         const word_type mask = Mask(index);
         const bool wasSet = (word & mask) != 0;
         word |= mask;
@@ -55,10 +55,10 @@ public:
     }
 
     bool remove(size_type index) {
-        if (index >= size_) {
+        if (index >= m_size) {
             return false;
         }
-        word_type& word = words_[index / kBitsPerWord];
+        word_type& word = m_words[index / kBitsPerWord];
         const word_type mask = Mask(index);
         const bool wasSet = (word & mask) != 0;
         word &= ~mask;
@@ -66,7 +66,7 @@ public:
     }
 
     bool contains(size_type index) const {
-        return index < size_ && (words_[index / kBitsPerWord] & Mask(index)) != 0;
+        return index < m_size && (m_words[index / kBitsPerWord] & Mask(index)) != 0;
     }
 
     void set(size_type index, bool value) {
@@ -78,14 +78,14 @@ public:
     }
 
     void flip(size_type index) {
-        if (index >= size_) {
+        if (index >= m_size) {
             resize(index + 1, false);
         }
-        words_[index / kBitsPerWord] ^= Mask(index);
+        m_words[index / kBitsPerWord] ^= Mask(index);
     }
 
     void flipAll() noexcept {
-        for (word_type& word : words_) {
+        for (word_type& word : m_words) {
             word = ~word;
         }
         MaskLastWord();
@@ -93,7 +93,7 @@ public:
 
     size_type count() const noexcept {
         size_type total = 0;
-        for (word_type word : words_) {
+        for (word_type word : m_words) {
             total += PopCount(word);
         }
         return total;
@@ -104,14 +104,14 @@ public:
     bool none() const noexcept { return count() == 0; }
 
     bool all() const noexcept {
-        if (size_ == 0) {
+        if (m_size == 0) {
             return true;
         }
-        const size_type last = words_.size() - 1;
-        for (size_type index = 0; index < words_.size(); ++index) {
+        const size_type last = m_words.size() - 1;
+        for (size_type index = 0; index < m_words.size(); ++index) {
             const word_type expected =
                 index == last ? MaskedLastWord() : ~word_type(0);
-            if (words_[index] != expected) {
+            if (m_words[index] != expected) {
                 return false;
             }
         }
@@ -120,11 +120,11 @@ public:
 
     // Returns the smallest set bit index >= from, or size() if there is none.
     size_type nextSetBit(size_type from = 0) const {
-        if (from >= size_) {
-            return size_;
+        if (from >= m_size) {
+            return m_size;
         }
         size_type wordIndex = from / kBitsPerWord;
-        word_type word = words_[wordIndex] & (~word_type(0) << (from % kBitsPerWord));
+        word_type word = m_words[wordIndex] & (~word_type(0) << (from % kBitsPerWord));
         while (true) {
             if (word != 0) {
                 size_type bit = 0;
@@ -135,64 +135,64 @@ public:
                 return wordIndex * kBitsPerWord + bit;
             }
             ++wordIndex;
-            if (wordIndex >= words_.size()) {
-                return size_;
+            if (wordIndex >= m_words.size()) {
+                return m_size;
             }
-            word = words_[wordIndex];
+            word = m_words[wordIndex];
         }
     }
 
     BitSet& operator&=(const BitSet& other) {
-        const size_type common = words_.size() < other.words_.size()
-                                     ? words_.size()
-                                     : other.words_.size();
+        const size_type common = m_words.size() < other.m_words.size()
+                                     ? m_words.size()
+                                     : other.m_words.size();
         for (size_type index = 0; index < common; ++index) {
-            words_[index] &= other.words_[index];
+            m_words[index] &= other.m_words[index];
         }
-        for (size_type index = common; index < words_.size(); ++index) {
-            words_[index] = 0;
+        for (size_type index = common; index < m_words.size(); ++index) {
+            m_words[index] = 0;
         }
         MaskLastWord();
         return *this;
     }
 
     BitSet& operator|=(const BitSet& other) {
-        if (other.size_ > size_) {
-            resize(other.size_, false);
+        if (other.m_size > m_size) {
+            resize(other.m_size, false);
         }
-        const size_type common = words_.size() < other.words_.size()
-                                     ? words_.size()
-                                     : other.words_.size();
+        const size_type common = m_words.size() < other.m_words.size()
+                                     ? m_words.size()
+                                     : other.m_words.size();
         for (size_type index = 0; index < common; ++index) {
-            words_[index] |= other.words_[index];
+            m_words[index] |= other.m_words[index];
         }
         MaskLastWord();
         return *this;
     }
 
     BitSet& operator^=(const BitSet& other) {
-        if (other.size_ > size_) {
-            resize(other.size_, false);
+        if (other.m_size > m_size) {
+            resize(other.m_size, false);
         }
-        const size_type common = words_.size() < other.words_.size()
-                                     ? words_.size()
-                                     : other.words_.size();
+        const size_type common = m_words.size() < other.m_words.size()
+                                     ? m_words.size()
+                                     : other.m_words.size();
         for (size_type index = 0; index < common; ++index) {
-            words_[index] ^= other.words_[index];
+            m_words[index] ^= other.m_words[index];
         }
         MaskLastWord();
         return *this;
     }
 
     void swap(BitSet& other) noexcept {
-        words_.swap(other.words_);
-        const size_type size = size_;
-        size_ = other.size_;
-        other.size_ = size;
+        m_words.swap(other.m_words);
+        const size_type size = m_size;
+        m_size = other.m_size;
+        other.m_size = size;
     }
 
     friend bool operator==(const BitSet& lhs, const BitSet& rhs) {
-        return lhs.size_ == rhs.size_ && lhs.words_ == rhs.words_;
+        return lhs.m_size == rhs.m_size && lhs.m_words == rhs.m_words;
     }
 
     friend bool operator!=(const BitSet& lhs, const BitSet& rhs) {
@@ -223,17 +223,17 @@ private:
     }
 
     word_type MaskedLastWord() const noexcept {
-        return words_.empty() ? word_type(0) : LastWordMask(size_);
+        return m_words.empty() ? word_type(0) : LastWordMask(m_size);
     }
 
     void MaskLastWord() noexcept {
-        if (!words_.empty()) {
-            words_.back() &= LastWordMask(size_);
+        if (!m_words.empty()) {
+            m_words.back() &= LastWordMask(m_size);
         }
     }
 
-    std::vector<word_type> words_;
-    size_type size_ = 0;
+    std::vector<word_type> m_words;
+    size_type m_size = 0;
 };
 
 inline BitSet operator&(BitSet lhs, const BitSet& rhs) {

@@ -16,13 +16,13 @@ namespace containers {
 template <typename T>
 class OnceCell {
 public:
-    OnceCell() noexcept : init_(false) {}
+    OnceCell() noexcept : m_init(false) {}
 
     OnceCell(const OnceCell&) = delete;
     OnceCell& operator=(const OnceCell&) = delete;
 
     ~OnceCell() {
-        if (init_) {
+        if (m_init) {
             ptr()->~T();
         }
     }
@@ -30,9 +30,9 @@ public:
     // Runs `factory` once and returns the value; later calls ignore the factory.
     template <typename F>
     T& getOrInit(F&& factory) {
-        std::call_once(once_, [this, &factory] {
-            new (&storage_) T(std::forward<F>(factory)());
-            init_ = true;
+        std::call_once(m_once, [this, &factory] {
+            new (&m_storage) T(std::forward<F>(factory)());
+            m_init = true;
         });
         return *ptr();
     }
@@ -42,36 +42,36 @@ public:
     template <typename F>
     bool tryInit(F&& factory) {
         bool inserted = false;
-        std::call_once(once_, [this, &factory, &inserted] {
-            new (&storage_) T(std::forward<F>(factory)());
-            init_ = true;
+        std::call_once(m_once, [this, &factory, &inserted] {
+            new (&m_storage) T(std::forward<F>(factory)());
+            m_init = true;
             inserted = true;
         });
         return inserted;
     }
 
-    bool isInit() const noexcept { return init_; }
+    bool isInit() const noexcept { return m_init; }
 
-    T* get() noexcept { return init_ ? ptr() : nullptr; }
-    const T* get() const noexcept { return init_ ? ptr() : nullptr; }
+    T* get() noexcept { return m_init ? ptr() : nullptr; }
+    const T* get() const noexcept { return m_init ? ptr() : nullptr; }
 
     T& value() {
-        assert(init_);
+        assert(m_init);
         return *ptr();
     }
 
     const T& value() const {
-        assert(init_);
+        assert(m_init);
         return *ptr();
     }
 
 private:
-    T* ptr() noexcept { return reinterpret_cast<T*>(&storage_); }
-    const T* ptr() const noexcept { return reinterpret_cast<const T*>(&storage_); }
+    T* ptr() noexcept { return reinterpret_cast<T*>(&m_storage); }
+    const T* ptr() const noexcept { return reinterpret_cast<const T*>(&m_storage); }
 
-    typename std::aligned_storage<sizeof(T), alignof(T)>::type storage_;
-    std::once_flag once_;
-    bool init_;
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type m_storage;
+    std::once_flag m_once;
+    bool m_init;
 };
 
 // Rust's `once_cell::sync::Lazy`: a value built by a factory on first use.
@@ -80,19 +80,19 @@ template <typename T>
 class Lazy {
 public:
     template <typename F>
-    explicit Lazy(F&& factory) : factory_(std::forward<F>(factory)) {}
+    explicit Lazy(F&& factory) : m_factory(std::forward<F>(factory)) {}
 
     Lazy(const Lazy&) = delete;
     Lazy& operator=(const Lazy&) = delete;
 
     T& get() {
         ensure();
-        return cell_.value();
+        return m_cell.value();
     }
 
     const T& get() const {
         ensure();
-        return cell_.value();
+        return m_cell.value();
     }
 
     T& operator*() { return get(); }
@@ -101,15 +101,15 @@ public:
     T* operator->() { return &get(); }
     const T* operator->() const { return &get(); }
 
-    bool isInit() const noexcept { return cell_.isInit(); }
+    bool isInit() const noexcept { return m_cell.isInit(); }
 
 private:
     void ensure() const {
-        cell_.getOrInit([this] { return factory_(); });
+        m_cell.getOrInit([this] { return m_factory(); });
     }
 
-    std::function<T()> factory_;
-    mutable OnceCell<T> cell_;
+    std::function<T()> m_factory;
+    mutable OnceCell<T> m_cell;
 };
 
 } // namespace containers
