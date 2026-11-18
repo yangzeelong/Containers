@@ -80,8 +80,11 @@ is included individually.
     insertion order, with O(1) `swapErase` and order-preserving `erase`.
 *   **Stable slots** — `SlotMap<T>` hands out generation-tagged `SlotKey`s, so a
     stale key can never alias a reused slot (`clear` invalidates every key).
+*   **Growable bitset** — `BitSet` is a dynamically sized bit vector stored in
+    64-bit words: `insert` / `remove` / `contains`, automatic growth, `count`,
+    `nextSetBit` iteration and bitwise `&`, `|`, `^`, `~` operators.
 
-### `concurrency/` — queues and shared ownership
+### `concurrency/` — queues, threads and shared ownership
 
 *   **Blocking concurrent queue** — `ConcurrentQueue<T>` is a mutex/condition-variable
     bounded or unbounded MPMC queue with shutdown wake-up, FIFO order and lifetime counters.
@@ -96,6 +99,10 @@ is included individually.
     with a release sequence word, the consumer recycles them. `waitAndPop()` parks
     the consumer on a condition variable that producers only touch when it is
     idle, and `close()` wakes a blocked consumer and rejects new pushes.
+*   **Join-on-destroy threads** — `Thread` is a move-only RAII wrapper around
+    `std::thread` that joins in its destructor instead of terminating the process;
+    `ScopedThread` is the non-movable, non-detachable variant for structured
+    concurrency, so a worker can never outlive its scope.
 
 ## Quick Start
 
@@ -127,7 +134,7 @@ override.
 | `include/containers/message/` | `Message.hpp` — COW message + message metadata |
 | `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cow.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `StringView.hpp`, `ViewPtr.hpp` |
 | `include/containers/collections/` | General-purpose containers: `Bytes.hpp`, `SmallVec.hpp`, `IndexMap.hpp`, `SlotMap.hpp` |
-| `include/containers/concurrency/` | Queues and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `AtomicSharedPtr.hpp`, `MpscQueue.hpp` |
+| `include/containers/concurrency/` | Queues, threads and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `AtomicSharedPtr.hpp`, `Thread.hpp` |
 | `include/containers/Config.hpp` | `CS_NODISCARD` feature shim shared by the headers |
 | `include/containers/bench/PerfEval.hpp` | Threshold-based performance evaluation harness |
 | `tests/` | GoogleTest sources grouped by component (`message/`, `stdx/`, `collections/`, `concurrency/`, `bench/`) + `gtest_main.cpp` runner |
