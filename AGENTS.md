@@ -13,7 +13,7 @@
 - `message/`：**Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝语义）。
 - `stdx/`：Rust 风格的基础类型与 std 扩展——`Any`、`Optional`、`ViewPtr`、`StringView`、
   `Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
-- `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`。
+- `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`、`BitSet`。
 - `concurrency/`：并发原语——阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者
   环形队列 `SpscQueue`、`AtomicSharedPtr`、`Thread`/`ScopedThread`。
 
@@ -57,6 +57,7 @@
 | SharedStr | `include/containers/stdx/SharedStr.hpp` |
 | IndexMap | `include/containers/collections/IndexMap.hpp` |
 | SlotMap | `include/containers/collections/SlotMap.hpp` |
+| BitSet（动态位集） | `include/containers/collections/BitSet.hpp` |
 | 性能评估框架 | `include/containers/bench/PerfEval.hpp` + `benchmarks/perf/PerfEvaluatorMain.cpp` |
 | 并发队列 / 无锁 SPSC 环形队列 | `include/containers/concurrency/ConcurrentQueue.hpp` / `SpscQueue.hpp` |
 | Thread / ScopedThread（RAII 线程） | `include/containers/concurrency/Thread.hpp` |

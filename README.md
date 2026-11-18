@@ -80,6 +80,9 @@ is included individually.
     insertion order, with O(1) `swapErase` and order-preserving `erase`.
 *   **Stable slots** — `SlotMap<T>` hands out generation-tagged `SlotKey`s, so a
     stale key can never alias a reused slot (`clear` invalidates every key).
+*   **Growable bitset** — `BitSet` is a dynamically sized bit vector stored in
+    64-bit words: `insert` / `remove` / `contains`, automatic growth, `count`,
+    `nextSetBit` iteration and bitwise `&`, `|`, `^`, `~` operators.
 
 ### `concurrency/` — queues, threads and shared ownership
 
