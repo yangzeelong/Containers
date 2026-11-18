@@ -112,6 +112,10 @@ cmake --build build --parallel 16
 ctest --test-dir build --output-on-failure
 ```
 
+First-party test and benchmark targets compile warnings-as-errors
+(`-Wall -Wextra -Werror` on GCC/Clang, `/W4 /WX` on MSVC); the exported header-only
+target itself stays free of these flags.
+
 The checked-in `examples/consumer/` project is a standalone downstream user: point it
 at an install prefix with `find_package(Containers CONFIG)` — exactly what the CI does
 for every change:
