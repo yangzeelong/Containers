@@ -11,8 +11,8 @@
 类别放在子目录，组件覆盖四组：
 
 - `message/`：**Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝语义）。
-- `stdx/`：Rust 风格的基础类型与 std 扩展——`Any`、`Optional`、`ViewPtr`、`Result`、
-  `Unit`、`Cow`、`OnceCell`/`Lazy`、`Cell`/`RefCell`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
+- `stdx/`：Rust 风格的基础类型与 std 扩展——`Any`、`Optional`、`ViewPtr`、`StringView`、
+  `Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
 - `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`。
 - `concurrency/`：并发原语——阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者
   环形队列 `SpscQueue`、`AtomicSharedPtr`。
@@ -28,7 +28,7 @@
 | 路径 | 作用 |
 | --- | --- |
 | `include/containers/message/Message.hpp` | COW 消息容器 + 消息元数据 |
-| `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、Result、Unit、Cow、OnceCell、Cell、RefCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
+| `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、StringView、Result、Unit、Cow、OnceCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
 | `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap） |
 | `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、AtomicSharedPtr） |
 | `tests/` | 单测（按组件分组：message/stdx/collections/concurrency/bench，自动编译进 `containers_tests`） |
@@ -43,7 +43,7 @@
 | 想改的东西 | 文件 |
 | --- | --- |
 | Message 模型 / COW 行为 | `include/containers/message/Message.hpp` |
-| Any / Optional / ViewPtr | `include/containers/stdx/Any.hpp`、`include/containers/stdx/Optional.hpp`、`include/containers/stdx/ViewPtr.hpp` |
+| Any / Optional / ViewPtr / StringView | `include/containers/stdx/Any.hpp`、`include/containers/stdx/Optional.hpp`、`include/containers/stdx/ViewPtr.hpp`、`include/containers/stdx/StringView.hpp` |
 | Result / Unit / Config（Rust 风格） | `include/containers/stdx/Result.hpp`、`include/containers/stdx/Unit.hpp`、`include/containers/Config.hpp` |
 | ScopedGuard / OnScopeExit | `include/containers/stdx/ScopedGuard.hpp` |
 | Cow（Borrowed/Owned） | `include/containers/stdx/Cow.hpp` |
@@ -153,7 +153,7 @@ ctest --test-dir build --output-on-failure
   双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`、
   `OnceCellTest`、`CellTest`、`RefCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
   `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`SharedStrTest`、
-  `IndexMapTest`、`SlotMapTest`、`MessageBytesTest`、`PerfEvalTest`。
+  `IndexMapTest`、`SlotMapTest`、`StringViewTest`、`MessageBytesTest`、`PerfEvalTest`。
 - 改头（解析、COW、队列、唤醒）**必须**跑测试；不要为了变绿去改测试语义，
   要么修实现，要么先说明测试断言本身错了。
 - 性能评估框架（`containers_perf_eval`）：`include/containers/bench/PerfEval.hpp`
