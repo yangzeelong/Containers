@@ -45,6 +45,10 @@ is included individually.
     interface it was originally extracted from).
 *   **Non-owning pointer view** — `ViewPtr<T>` is a zero-cost wrapper explicitly
     modelling "I don't own it", with `std::hash` support for unordered containers.
+*   **Non-owning string view** — `containers::StringView` is a C++14 stand-in for
+    `std::string_view`: a constexpr-friendly view over any character buffer with
+    substring, compare, find/rfind and prefix/suffix checks. It never allocates,
+    keeps embedded NUL bytes, and provides `std::hash` plus an `_sv` literal.
 *   **Rust-style result** — `containers::Result<T, E>` with a `Result<void, E>`
     specialization, `map` / `mapErr` / `andThen` / `unwrapOr`, plus a `Unit` type
     for empty payloads. C++14, no exceptions required.
@@ -112,7 +116,7 @@ override.
 | Path | Contents |
 | --- | --- |
 | `include/containers/message/` | `Message.hpp` — COW message + message metadata |
-| `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cow.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `ViewPtr.hpp` |
+| `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cow.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `StringView.hpp`, `ViewPtr.hpp` |
 | `include/containers/collections/` | General-purpose containers: `Bytes.hpp`, `SmallVec.hpp`, `IndexMap.hpp`, `SlotMap.hpp` |
 | `include/containers/concurrency/` | Queues and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `AtomicSharedPtr.hpp` |
 | `include/containers/Config.hpp` | `CS_NODISCARD` feature shim shared by the headers |
