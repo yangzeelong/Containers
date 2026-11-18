@@ -5,12 +5,17 @@
 // Cases either compare against a reference case measured in the same run (so
 // the verdict survives different machines) or against an absolute ns/op limit.
 
+#include <containers/collections/BitSet.hpp>
 #include <containers/collections/Bytes.hpp>
-#include <containers/stdx/Cow.hpp>
+#include <containers/collections/SmallVec.hpp>
+#include <containers/concurrency/ConcurrentQueue.hpp>
+#include <containers/concurrency/MpscQueue.hpp>
 #include <containers/message/Message.hpp>
+#include <containers/stdx/Cell.hpp>
+#include <containers/stdx/Cow.hpp>
 #include <containers/stdx/OnceCell.hpp>
 #include <containers/stdx/SharedStr.hpp>
-#include <containers/collections/SmallVec.hpp>
+#include <containers/stdx/StringView.hpp>
 #include <containers/bench/PerfEval.hpp>
 
 #include <cstddef>
@@ -26,6 +31,14 @@ namespace {
 
 using containers::bench::KeepAlive;
 using containers::bench::PerfEvaluator;
+
+// Read-only cases can be folded out of the timed loop (the compiler may hoist a
+// pure computation whose only consumer is a local address). Feed their results
+// through a volatile sink so every iteration still pays the measured work.
+volatile std::uint64_t g_perfSink = 0;
+volatile std::size_t g_perfRotate = 0;
+
+void Consume(std::uint64_t value) { g_perfSink = g_perfSink + value; }
 
 const containers::Bytes& PayloadBytes64K() {
     static const containers::Bytes payload = [] {
@@ -114,6 +127,99 @@ void CowBorrowedRead() {
     KeepAlive(&cow.get());
 }
 
+std::string& MutableCompareLeft() {
+    static std::string text(1024, 'x');
+    return text;
+}
+
+std::string& MutableCompareRight() {
+    static std::string text(1024, 'x');
+    return text;
+}
+
+std::vector<bool>& MutableVectorBool64K() {
+    static std::vector<bool> bits(64u * 1024u, true);
+    return bits;
+}
+
+containers::BitSet& MutableBitSet64K() {
+    static containers::BitSet bits = [] {
+        containers::BitSet value;
+        value.resize(64u * 1024u, true);
+        return value;
+    }();
+    return bits;
+}
+
+void StringCompare1K() {
+    std::string& right = MutableCompareRight();
+    right.back() = right.back() == 'x' ? 'y' : 'x';
+    Consume(static_cast<std::uint64_t>(MutableCompareLeft().compare(right)));
+}
+
+void StringViewCompare1K() {
+    std::string& right = MutableCompareRight();
+    right.back() = right.back() == 'x' ? 'y' : 'x';
+    Consume(static_cast<std::uint64_t>(containers::StringView(MutableCompareLeft())
+                                           .compare(containers::StringView(right))));
+}
+
+void VectorBoolCount64K() {
+    std::vector<bool>& bits = MutableVectorBool64K();
+    const std::size_t index = static_cast<std::size_t>(g_perfRotate++) % bits.size();
+    bits[index] = !bits[index];
+    std::size_t count = 0;
+    for (std::size_t cursor = 0; cursor < bits.size(); ++cursor) {
+        if (bits[cursor]) {
+            ++count;
+        }
+    }
+    Consume(static_cast<std::uint64_t>(count));
+}
+
+void BitSetCount64K() {
+    containers::BitSet& bits = MutableBitSet64K();
+    const std::size_t index = static_cast<std::size_t>(g_perfRotate++) % bits.size();
+    bits.flip(index);
+    Consume(static_cast<std::uint64_t>(bits.count()));
+}
+
+void ConcurrentQueuePushPop256() {
+    ConcurrentQueue<int> queue(1024);
+    int popped = 0;
+    bool ok = true;
+    for (int value = 0; value < 256; ++value) {
+        ok = queue.tryPush(value) && ok;
+        ok = queue.tryPop(popped) && ok;
+    }
+    KeepAlive(&ok);
+}
+
+void MpscQueuePushPop256() {
+    containers::MpscQueue<int> queue(1024);
+    int popped = 0;
+    bool ok = true;
+    for (int value = 0; value < 256; ++value) {
+        ok = queue.tryPush(value) && ok;
+        ok = queue.tryPop(popped) && ok;
+    }
+    KeepAlive(&ok);
+}
+
+void CellGetSet() {
+    static containers::Cell<int> cell(0);
+    cell.set(cell.get() + 1);
+    const int value = cell.get();
+    KeepAlive(&value);
+}
+
+void RefCellBorrowMut() {
+    static containers::RefCell<int> cell(0);
+    containers::RefCell<int>::RefMut guard = cell.borrowMut();
+    *guard += 1;
+    KeepAlive(&guard);
+}
+
 void RegisterCases(PerfEvaluator& evaluator) {
     evaluator.AddCase("vector_reserved_push", VectorReservedPush);
     evaluator.AddCase("smallvec_inline_push", SmallVecInlinePush,
@@ -129,6 +235,21 @@ void RegisterCases(PerfEvaluator& evaluator) {
     evaluator.AddCase("message_bytes_copy_64k", MessageBytesCopy64K);
     evaluator.AddCase("oncecell_hot_get", OnceCellHotGet, {500.0, "", 0.0});
     evaluator.AddCase("cow_borrowed_read", CowBorrowedRead);
+
+    evaluator.AddCase("string_compare_1k", StringCompare1K);
+    evaluator.AddCase("stringview_compare_1k", StringViewCompare1K,
+                      {0.0, "string_compare_1k", 25.0});
+
+    evaluator.AddCase("vector_bool_count_64k", VectorBoolCount64K);
+    evaluator.AddCase("bitset_count_64k", BitSetCount64K,
+                      {0.0, "vector_bool_count_64k", 50.0});
+
+    evaluator.AddCase("concurrentqueue_push_pop_256", ConcurrentQueuePushPop256);
+    evaluator.AddCase("mpscqueue_push_pop_256", MpscQueuePushPop256,
+                      {0.0, "concurrentqueue_push_pop_256", 150.0});
+
+    evaluator.AddCase("cell_get_set", CellGetSet, {50.0, "", 0.0});
+    evaluator.AddCase("refcell_borrow_mut", RefCellBorrowMut, {50.0, "", 0.0});
 }
 
 struct CommandLine {
