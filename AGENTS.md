@@ -12,7 +12,7 @@
 
 - `message/`：**Copy-On-Write 消息容器**（`containers::Message`，共享指针深拷贝语义）。
 - `stdx/`：Rust 风格的基础类型与 std 扩展——`Any`、`Optional`、`ViewPtr`、`StringView`、
-  `Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
+  `Result`、`Unit`、`Cow`、`OnceCell`/`Lazy`、`Cell`/`RefCell`、`BitFlags`、`NonZero`、`SharedStr`、`ScopedGuard`。
 - `collections/`：通用容器——`Bytes`/`BytesMut`、`SmallVec`、`IndexMap`、`SlotMap`、`BitSet`。
 - `concurrency/`：并发原语——阻塞式并发队列 `ConcurrentQueue`、无锁单生产者单消费者
   环形队列 `SpscQueue`、`AtomicSharedPtr`、`Thread`/`ScopedThread`。
@@ -28,8 +28,8 @@
 | 路径 | 作用 |
 | --- | --- |
 | `include/containers/message/Message.hpp` | COW 消息容器 + 消息元数据 |
-| `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、StringView、Result、Unit、Cow、OnceCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
-| `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap） |
+| `include/containers/stdx/` | Rust 风格基础类型 / std 扩展（Any、Optional、ViewPtr、StringView、Result、Unit、Cow、OnceCell、Cell、RefCell、BitFlags、NonZero、SharedStr、ScopedGuard） |
+| `include/containers/collections/` | 通用容器（Bytes、SmallVec、IndexMap、SlotMap、BitSet） |
 | `include/containers/concurrency/` | 并发原语（ConcurrentQueue、SpscQueue、AtomicSharedPtr、Thread/ScopedThread） |
 | `tests/` | 单测（按组件分组：message/stdx/collections/concurrency/bench，自动编译进 `containers_tests`） |
 | `benchmarks/` | Google Benchmark（同样按组件分组）+ `benchmark_main.cpp`；`benchmarks/perf/` 是 perf-eval runner |
@@ -155,7 +155,7 @@ ctest --test-dir build --output-on-failure
   双线程压力用例）、`ResultTest`、`UnitTest`、`ScopedGuardTest`、`CowTest`、
   `OnceCellTest`、`CellTest`、`RefCellTest`、`LazyTest`、`BytesTest`、`BytesMutTest`、`BitFlagsTest`、
   `NonZeroTest`、`SmallVecTest`、`AtomicSharedPtrTest`、`ThreadTest`、`ScopedThreadTest`、`SharedStrTest`、
-  `IndexMapTest`、`SlotMapTest`、`StringViewTest`、`MessageBytesTest`、`PerfEvalTest`。
+  `IndexMapTest`、`SlotMapTest`、`BitSetTest`、`StringViewTest`、`MessageBytesTest`、`PerfEvalTest`。
 - 改头（解析、COW、队列、唤醒）**必须**跑测试；不要为了变绿去改测试语义，
   要么修实现，要么先说明测试断言本身错了。
 - 性能评估框架（`containers_perf_eval`）：`include/containers/bench/PerfEval.hpp`
@@ -165,7 +165,7 @@ ctest --test-dir build --output-on-failure
   `--tolerance` 给默认容差，超标退出码 1，`--no-check` 只出报告。`ctest` 跑一条
   `--no-check` 短冒烟，保证框架本身不腐化。
 - 本地实测（Clang 19.1.5 Release）：`ctest` 3/3 通过——`containers_tests` 1.9s
-  （24 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 76s。基准数字
+  （30 个 suite，含 20 万消息 SPSC 压力）、`containers_benchmarks` 76s。基准数字
   基线（16/2048 元素）：`BM_MessageCopy` 0.011/0.011 us、`BM_MessageConstruction`
   0.093/0.135 us、`BM_MessageCOWDetach` 0.074/0.105 us、`BM_MessageClone`
   0.065/0.093 us、`BM_SpscQueueMessageTransfer` 0.076 us；拷贝成本与 payload 大小

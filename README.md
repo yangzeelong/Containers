@@ -127,8 +127,8 @@ override.
 | Path | Contents |
 | --- | --- |
 | `include/containers/message/` | `Message.hpp` — COW message + message metadata |
-| `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cow.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `StringView.hpp`, `ViewPtr.hpp` |
-| `include/containers/collections/` | General-purpose containers: `Bytes.hpp`, `SmallVec.hpp`, `IndexMap.hpp`, `SlotMap.hpp` |
+| `include/containers/stdx/` | Rust-inspired std extensions: `Any.hpp`, `Optional.hpp`, `Result.hpp`, `Unit.hpp`, `Cow.hpp`, `Cell.hpp`, `OnceCell.hpp`, `BitFlags.hpp`, `NonZero.hpp`, `ScopedGuard.hpp`, `SharedStr.hpp`, `StringView.hpp`, `ViewPtr.hpp` |
+| `include/containers/collections/` | General-purpose containers: `Bytes.hpp`, `SmallVec.hpp`, `IndexMap.hpp`, `SlotMap.hpp`, `BitSet.hpp` |
 | `include/containers/concurrency/` | Queues, threads and shared ownership: `ConcurrentQueue.hpp`, `SpscQueue.hpp`, `AtomicSharedPtr.hpp`, `Thread.hpp` |
 | `include/containers/Config.hpp` | `CS_NODISCARD` feature shim shared by the headers |
 | `include/containers/bench/PerfEval.hpp` | Threshold-based performance evaluation harness |
@@ -150,9 +150,11 @@ ctest --test-dir build --output-on-failure                            # 3 tests:
 Current suites: `MessageTest`, `MessageMetaTest`, `AnyTest`,
 `OptionalThrowingTest`, `ConcurrentQueueTest`, `SpscQueueTest`,
 `SpscMessageStress`, `ResultTest`, `UnitTest`, `ScopedGuardTest`, `CowTest`,
-`OnceCellTest`, `LazyTest`, `BytesTest`, `BytesMutTest`, `BitFlagsTest`,
-`NonZeroTest`, `SmallVecTest`, `AtomicSharedPtrTest`, `SharedStrTest`,
-`IndexMapTest`, `SlotMapTest`, `MessageBytesTest`, `PerfEvalTest`. Test sources
+`OnceCellTest`, `CellTest`, `RefCellTest`, `LazyTest`, `BytesTest`,
+`BytesMutTest`, `BitFlagsTest`, `NonZeroTest`, `SmallVecTest`,
+`AtomicSharedPtrTest`, `ThreadTest`, `ScopedThreadTest`, `SharedStrTest`,
+`IndexMapTest`, `SlotMapTest`, `BitSetTest`, `StringViewTest`,
+`MessageBytesTest`, `PerfEvalTest`. Test sources
 are found by suffix: any `*Test.cpp` under `tests/` is compiled into
 `containers_tests`, so a new test file is picked up automatically.
 
