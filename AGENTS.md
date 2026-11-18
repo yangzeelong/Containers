@@ -95,6 +95,11 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 16
 ```
 
+`containers_tests`、`containers_benchmarks`、`containers_perf_eval` 这些 first-party 目标
+由 `cmake/Utils.cmake` 的 `containers_enable_warnings` 强制
+`-Wall -Wextra -Werror`（GCC/Clang）或 `/W4 /WX`（MSVC）；新增代码必须零警告。
+导出给下游的 header-only target 不带这些 flag，避免把警告策略强加给消费者。
+
 产物：`build/tests/containers_tests(.exe)`（单测）、
 `build/benchmarks/containers_benchmarks`（基准，联网或离线源码）、
 `build/benchmarks/containers_perf_eval`（目标阈值判定）。header-only 库本身没有
