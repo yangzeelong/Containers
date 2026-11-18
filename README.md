@@ -142,7 +142,7 @@ override.
 | `benchmarks/perf/` | `containers_perf_eval`: targets, verdicts and a Markdown report |
 | `examples/consumer/` | Standalone downstream project: `find_package(Containers CONFIG)` + install prefix |
 | `cmake/` | `include.cmake`, `Utils.cmake`, `Summary.cmake`, `3rdparty/*.cmake`, `ContainersConfig.cmake.in` |
-| `.github/workflows/ci.yml` | Linux (gcc, clang) and Windows (MSVC) build + test + install-consume + benchmark smoke |
+| `.github/workflows/ci.yml` | Linux (gcc, clang) and Windows (MSVC) build + test + install-consume + benchmark smoke; Linux sanitizer jobs (ASan+UBSan, TSan) |
 
 ## Testing & Benchmarking
 

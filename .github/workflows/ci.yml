@@ -51,6 +51,49 @@ jobs:
           --benchmark_min_time=0.01s
           --benchmark_filter=BM_SpscQueueMessageTransfer
 
+  sanitizers:
+    name: sanitize-${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: asan-ubsan
+            flags: -fsanitize=address,undefined
+            test_filter: '*'
+          - name: tsan
+            flags: -fsanitize=thread
+            test_filter: 'ConcurrentQueueTest.*:SpscQueueTest.*:SpscMessageStress.*:MpscQueueTest.*:ThreadTest.*:ScopedThreadTest.*:AtomicSharedPtrTest.*'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Configure
+        env:
+          CC: clang
+          CXX: clang++
+          SANITIZER_FLAGS: ${{ matrix.flags }}
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DWITH_BENCHMARK=OFF
+          -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS -O1 -g -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS"
+
+      - name: Build
+        run: cmake --build build --parallel 4
+
+      - name: Test
+        env:
+          GTEST_FILTER: ${{ matrix.test_filter }}
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:abort_on_error=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+          TSAN_OPTIONS: halt_on_error=1:second_deadlock_stack=1
+        run: ctest --test-dir build --output-on-failure --no-tests=error
+
   windows:
     name: windows-msvc
     runs-on: windows-latest

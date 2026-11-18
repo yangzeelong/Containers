@@ -37,7 +37,7 @@
 | `benchmarks/perf/` | `containers_perf_eval`：目标阈值判定 + Markdown 报告 |
 | `examples/consumer/` | 独立下游工程：`find_package(Containers CONFIG)`，只对着 `cmake --install` 的前缀构建，不进入本树 |
 | `cmake/` | `include.cmake`、`Utils.cmake`、`Summary.cmake`、`3rdparty/*.cmake`、`ContainersConfig.cmake.in` |
-| `.github/workflows/ci.yml` | Linux（gcc/clang）与 Windows（MSVC）构建 + 单测 + 安装消费 + 基准冒烟 |
+| `.github/workflows/ci.yml` | Linux（gcc/clang）与 Windows（MSVC）构建 + 单测 + 安装消费 + 基准冒烟；另有两个 Linux sanitizer job（ASan+UBSan 全量单测、TSan 并发用例） |
 
 ### 代码地图（改哪里找哪里）
 
@@ -130,6 +130,25 @@ Windows + Clang 的 GNU 驱动有一个已修好的坑，别回退：**CRT 不�
 mismatch detected for 'RuntimeLibrary'`。根 `CMakeLists.txt` 给 `WIN32 + Clang +
 非 MSVC` 加了 `add_compile_options(-fms-runtime-lib=dll)` 与
 `add_link_options(-fms-runtime-lib=dll)`。
+
+### Sanitizer 构建（CI 有独立 job）
+
+CI 在 Ubuntu + clang 上跑两个 sanitizer job：ASan+UBSan 跑全部单测，TSan 只跑并发用例
+（`ConcurrentQueueTest`、`SpscQueueTest`、`SpscMessageStress`、`MpscQueueTest`、
+`ThreadTest`、`ScopedThreadTest`、`AtomicSharedPtrTest`）。本地复现：
+
+```bash
+cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+      -DWITH_BENCHMARK=OFF \
+      -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -O1 -g -fno-omit-frame-pointer" \
+      -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+cmake --build build-sanitize --parallel
+ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 \
+  ctest --test-dir build-sanitize --output-on-failure
+```
+
+TSan 把 `-fsanitize=address,undefined` 换成 `-fsanitize=thread`，并用 `GTEST_FILTER`
+限定为上面那组并发 suite。sanitizer 构建目录用 `build-sanitize`，不要覆盖日常 `build`。
 
 ### 离线构建
 
